@@ -21,7 +21,7 @@ nameFor = (sig) ->
   sig  = sig\gsub "^%s*(.+)%s*::%s*", (s) ->
     name = s
     ""
-  return name, sig
+  return (trim name), sig
 
 -- Returns and removes the constraints in a signature
 constraintsFor = (sig) ->
@@ -135,7 +135,49 @@ rebinarize = (sig) ->
   log "parser.rebinarize #ch", "r: #{oldr} >> #{inspect r}" if r != oldr
   {l, r}
 
+-- checks if first is uppercase/lowercase
+isUpper = (str) -> str\match"^%u" or false
+isLower = (str) -> str\match"^%l" or false
+
+-- compares two strings
+compareStrings = (a, b, cache) ->
+  return if (isUpper a) and (isUpper b)
+    -- have to be equal. A == A
+    a == b
+  elseif (isUpper a) and (isLower b)
+    -- b <- a
+    cache[b] = a
+    true
+  elseif (isLower a) and (isUpper b)
+    -- a <- b
+    cache[a] = b
+    true
+  elseif (isLower a) and (isLower b)
+    -- always true
+    true
+  else parserError "Type '#{a}' or '#{b}' do not start with a letter."
+
+-- compares a side of the signature tree
+compareSide = (a, b, cache={}) ->
+  if (type a) != (type b) then parserError "Mismatching types during compare. Signature A is #{type l}, signature B is #{type r}"
+  switch type a
+    when "string" then return compareStrings a, b
+    when "table"  then return true
+
+-- compares two signature trees
+compare = (siga, sigb) ->
+  na, siga = nameFor siga
+  nb, sigb = nameFor sigb
+  ca, siga = constraintsFor siga
+  cb, sigb = constraintsFor sigb
+  la, ra   = unpack rebinarize siga
+  lb, rb   = unpack rebinarize sigb
+  --
+  log "parser.compare #got", "Comparing \"#{na} :: #{inspect ca} => #{inspect siga}\" with \"#{nb} :: #{inspect cb} => #{inspect sigb}\""
+  return (compareSide la, lb) and (compareSide ra, rb)
+
 {
   :nameFor, :constraintsFor
   :binarize, :rebinarize
+  :compare
 }

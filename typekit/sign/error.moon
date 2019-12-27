@@ -2,8 +2,8 @@
 -- Error reporting for the parser
 import style from require "ansikit.style"
 
-parserError = (msg) ->
+signError = (msg) ->
   print style "%{bold red}typekit (sign) $%{notBold} #{msg}"
   error!
 
-{ :parserError }
+{ :signError }

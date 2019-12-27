@@ -8,11 +8,11 @@ signatures = {
   --"fb :: {a:b} -> {b:a}"
   --"fc :: [a] -> [b]"
   --"fd :: Eq Ord a, Ord a => Maybe a -> Boolean"
-  "a :: a"
-  "b :: a -> b"
-  "c :: a -> b -> c"
-  "d :: (a -> b) -> c"
-  "e :: a -> b -> c -> d -> e"
+  --"a :: a"
+  --"b :: a -> b"
+  --"c :: a -> b -> c"
+  --"d :: (a -> b) -> c"
+  --"e :: a -> b -> c -> d -> e"
   "f :: ((a -> b) -> c) -> (d -> e)"
 }
 
@@ -36,9 +36,15 @@ for i, sig in ipairs signatures
   l, r = unpack binarize sig
   log "parser/test.binarize", "#{l} >> #{r}" if BINARIZE
 
-REBINARIZE = true
+REBINARIZE = false
 for i, sig in ipairs signatures
   import rebinarize from parser
   l, r = unpack rebinarize sig
   log "parser/test.rebinarize", "#{inspect l} >> #{inspect r}" if REBINARIZE
   
+COMPARE = true
+if COMPARE
+  import compare from parser
+  siga = "map :: (a -> b) -> [a] -> [b]"
+  sigb = "map' :: (x -> y) -> [x] -> [y]"
+  log "parser/test.compare", compare siga, sigb
