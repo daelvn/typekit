@@ -24,6 +24,9 @@
     "parser.checkParenthesis #status"
     "parser.checkParenthesis #ret"
     "parser.checkParenthesis #got"
+    -- type.typeof.resolve
+    "type.typeof.resolve #got"
+    "type.typeof.resolve #resolved"
   }
 
   log                = typekitLgr!
