@@ -11,6 +11,8 @@
   typekitLgr.time    =     => ""
 
   typekitLgr.exclude = {
+    -- parser.nameFor
+    "parser.nameFor"
     -- parser.binarize
     "parser.binarize #loop"
     "parser.binarize #got"

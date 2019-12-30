@@ -16,40 +16,42 @@ signatures = {
   "f :: ((a -> b) -> c) -> (d -> e)"
 }
 
+import getlr from parser
+
 NAMES = false
-for i, sig in ipairs signatures
-  import nameFor from parser
-  n, sig        = nameFor sig
-  signatures[i] = sig
-  log "parser/test.nameFor", "#{inspect n} :: #{sig}" if NAMES
+if NAMES
+  for i, sig in ipairs signatures
+    import nameFor from parser
+    n, sig = nameFor sig
+    log "parser/test.nameFor", "#{inspect n} :: #{sig}"
 
 CONSTRAINTS = false
-for i, sig in ipairs signatures
-  import constraintsFor from parser
-  cl, sig       = constraintsFor sig
-  signatures[i] = sig
-  log "parser/test.constraintsFor", "#{inspect cl} => #{sig}" if CONSTRAINTS and (#cl > 0)
+if CONSTRAINTS
+  for i, sig in ipairs signatures
+    import constraintsFor from parser
+    cl, sig       = constraintsFor sig
+    log "parser/test.constraintsFor", "#{inspect cl} => #{sig}" if #cl > 0
 
 BINARIZE = false
-for i, sig in ipairs signatures
-  import binarize from parser
-  l, r = unpack binarize sig
-  log "parser/test.binarize", "#{l} >> #{r}" if BINARIZE
+if BINARIZE
+  for i, sig in ipairs signatures
+    import binarize from parser
+    S    = binarize sig 
+    l, r = getlr S
+    log "parser/test.binarize",              "#{l} >> #{r}"
+    log "parser/test.binarize #name",        "#{S.name}"
+    log "parser/test.binarize #constraints", "#{inspect S.constl}"
 
 REBINARIZE = false
-for i, sig in ipairs signatures
-  import rebinarize from parser
-  l, r = unpack rebinarize sig
-  log "parser/test.rebinarize", "#{inspect l} >> #{inspect r}" if REBINARIZE
-  
-COMPARE = false
-if COMPARE
-  import compare from parser
-  siga = "map :: (a -> b) -> [a] -> [b]"
-  sigb = "map' :: (x -> y) -> [x] -> [y]"
-  log "parser/test.compare", compare siga, sigb
+if REBINARIZE
+  for i, sig in ipairs signatures
+    import rebinarize from parser
+    S    = rebinarize sig
+    l, r = getlr S
+    log "parser/test.rebinarize", "#{inspect l} >> #{inspect r}"
 
 SUBSIGN = true
 if SUBSIGN
   import rebinarize from parser
-  log "parser/test.rebinarize #subsign", inspect rebinarize "Eq a => (Ord a => a -> a) -> a" 
+  S = rebinarize "Eq a => (Ord a => a -> a) -> a" 
+  log "parser/test.rebinarize #subsign", inspect S

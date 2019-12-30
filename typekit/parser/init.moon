@@ -10,26 +10,68 @@ unpack or= table.unpack
 -- f :: Cl a => a -> b -> c
 -- f :: {a:b} -> {b:a}
 -- f :: [a] -> [b]
--- f :: Eq Ord a, Ord a => Maybe a -> Boolean
+-- f :: Eq a, Ord a => Maybe a -> Boolean
 
 -- Trims spaces around a string
-trim = (str) -> if x = str\match "^%s*(.-)%s*$" then x else str
+trim = (str) ->
+  if str == nil                   then return nil
+  if x = str\match "^%s*(.-)%s*$" then x            else str
+
+-- Checks if a table contains an element
+contains = (t, elem) ->
+  for _, v in pairs t
+    return true if elem == v
+  return false 
+
+-- Gets left and right for a signature
+getlr = (sig) -> return sig.left, sig.right
 
 -- Returns and removes the name for a signature, if exists
 nameFor = (sig) ->
-  name = false
+  local name
   sig  = sig\gsub "^%s*(.+)%s*::%s*", (s) ->
+    log "parser.nameFor", "got #{s}"
     name = s
     ""
   return (trim name), sig
 
 -- Returns and removes the constraints in a signature
 constraintsFor = (sig) ->
-  constraints = {}
-  sig         = sig\gsub "^%s*(.+)%s*=>%s*", (s) ->
-    constraints = [trim const for const in s\gmatch "[^,]+"]
+  constl = {}
+  sig         = sig\gsub "^%s*(.-)%s*=>%s*", (s) ->
+    constl = [trim const for const in s\gmatch "[^,]+"]
     ""
+  --
+  constraints = {}
+  for const in *constl
+    parts = [part for part in const\gmatch "%S+"]
+    if #parts > 2 then parserError "More than two applications in constraint #{inspect parts} in '#{signature}'"
+    if constraints[parts[2]]
+      table.insert constraints[parts[2]], parts[1]
+    else
+      constraints[parts[2]] = {parts[1]}
+  --
   return constraints, sig
+
+-- Compares two sets of constraints
+compareConstraints = (base, target) ->
+  for var, constl in pairs base
+    return false unless target[var]
+    for const in *constl
+      return false unless contains target[var], const
+  return true
+
+-- Merge constraints
+-- Overrides current <- base
+--   merge:
+--     Eq a => a -> a
+--     Ord a => a -> a -- clears Eq constraint
+--   'a' does not have Eq constraint anymore but has Ord constraint.
+mergeConstraints = (target, base) ->
+  nt = {var, {const for const in *constl} for var, constl in pairs base}
+  for var, constl in pairs base
+    nt[var] = constl
+  nt
 
 -- Checks that all parenthesis match and whether the top-most parens can be removed
 checkParenthesis = (sig) ->
@@ -62,17 +104,32 @@ checkParenthesis = (sig) ->
 removeParenthesis = (sig) -> if x = sig\match "^%s*%((.+)%)%s*$" then x else sig
 
 -- Splits a signature in two by an arrow ->
-binarize = (sig) ->
+-- returns tree
+binarize = (sig, child=false, pname, pconstl) ->
   log "parser.binarize #got", sig
-  name, sig   = nameFor sig
-  const, sig  = constraintsFor sig
-  sig         = removeParenthesis sig if checkParenthesis sig
+  sig = removeParenthesis sig if checkParenthesis sig
+  
+  -- Get name and constraints 
+  name, sig    = nameFor sig
+  constl, sig  = constraintsFor sig
+
+  -- If we are inside another signature, check if we are scoped.
+  if child
+    if name != pname
+      log "parser.binarize #scope", "name changed from #{pname} to #{name}"
+    elseif not compareConstraints constl, pconstl
+      log "parser.binarize #scope", "constraints changed, merging #{inspect constl} into #{inspect pconstl}"
+      constl = mergeConstraints pconstl, constl
+      log "parser.binarize #scope", "constraints merged, result is #{inspect constl}"
+
+  -- Variables
   log "parser.binarize #sig", sig
   left, right = "", ""
   side        = false -- false -> left, true -> right
   depth       = 0
   flag        = {}
 
+  -- Functions
   agglutinate = (ch) -> if side then right ..= ch else left ..= ch
 
   for char in sig\gmatch "." do
@@ -112,19 +169,22 @@ binarize = (sig) ->
     right = left
     left  = ""
   log "parser.binarize #ret", "#{left} >> #{right}"
-  return {(trim left), (trim right)}
+  return {left: (trim left), right: (trim right), :name, :constl}
 
 -- recursively binarize
-rebinarize = (sig) ->
-  l, r       = unpack binarize sig
+rebinarize = (sig, child=false, pname, pconstl) ->
+  S          = binarize sig, child, pname, pconstl
+  l, r       = getlr S
   oldl, oldr = l, r
-  l = rebinarize l if l\match "%->"
+  l = rebinarize l, true, S.name, S.constl if l\match "%->"
   log "parser.rebinarize #ch", "l: #{oldl} >> #{inspect l}" if l != oldl
-  r = rebinarize r if r\match "%->"
+  r = rebinarize r, true, S.name, S.constl if r\match "%->"
   log "parser.rebinarize #ch", "r: #{oldr} >> #{inspect r}" if r != oldr
-  {l, r}
+  {left: l, right: r, name: S.name, constl: S.constl}
 
 {
   :nameFor, :constraintsFor
+  :getlr
+  :compareConstraints, :mergeConstraints
   :binarize, :rebinarize
 }
