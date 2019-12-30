@@ -64,8 +64,6 @@ removeParenthesis = (sig) -> if x = sig\match "^%s*%((.+)%)%s*$" then x else sig
 -- Splits a signature in two by an arrow ->
 binarize = (sig) ->
   log "parser.binarize #got", sig
-  name, sig   = nameFor sig
-  const, sig  = constraintsFor sig
   sig         = removeParenthesis sig if checkParenthesis sig
   log "parser.binarize #sig", sig
   left, right = "", ""
@@ -84,26 +82,39 @@ binarize = (sig) ->
     }
     switch char
       when "("
+        -- aggl char
         agglutinate char
+        -- continue if right side
         continue if side
+        -- increase depth
         depth += 1
+        -- make sure > only happens after -
         flag.await_arrow = false
       when ")"
+        -- aggl char
         agglutinate char
+        -- continue if right side
         continue if side
+        -- reduce depth
         depth -= 1
+        -- make sure > only happens after -
         flag.await_arrow = false
       when "-"
+        -- make sure > only happens after -
         flag.await_arrow = true if depth == 0
+        -- aggl char if inside parens or right side
         agglutinate char if (depth > 0) or side
       when ">"
+        -- aggl char if inside parens or right side
         if (depth > 0) or side
           agglutinate char
+        -- change side if - was previous character
         elseif flag.await_arrow
           flag.await_arrow = false
           side             = true
         else agglutinate char
-      else
+      else -- other chraracters
+        -- make sure > only happens after -
         flag.await_arrow = false
         agglutinate char
 

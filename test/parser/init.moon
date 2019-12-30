@@ -42,9 +42,14 @@ for i, sig in ipairs signatures
   l, r = unpack rebinarize sig
   log "parser/test.rebinarize", "#{inspect l} >> #{inspect r}" if REBINARIZE
   
-COMPARE = true
+COMPARE = false
 if COMPARE
   import compare from parser
   siga = "map :: (a -> b) -> [a] -> [b]"
   sigb = "map' :: (x -> y) -> [x] -> [y]"
   log "parser/test.compare", compare siga, sigb
+
+SUBSIGN = true
+if SUBSIGN
+  import rebinarize from parser
+  log "parser/test.rebinarize #subsign", inspect rebinarize "Eq a => (Ord a => a -> a) -> a" 
