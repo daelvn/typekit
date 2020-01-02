@@ -18,6 +18,7 @@
     "parser.binarize #got"
     "parser.binarize #sig"
     "parser.binarize #ret"
+    "parser.binarize #name"
     -- parser.rebinarize
     "parser.rebinarize #ch"
     -- parser.checkParenthesis

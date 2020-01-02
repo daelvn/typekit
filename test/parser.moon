@@ -1,7 +1,6 @@
 import DEBUG        from  require "typekit.config"
 import inspect, log from (require "typekit.debug") DEBUG
 parser                 =  require "typekit.parser"
-unpack or= table.unpack
 
 signatures = {
   --"fa :: Cl a => a -> b -> c"
@@ -50,8 +49,16 @@ if REBINARIZE
     l, r = getlr S
     log "parser/test.rebinarize", "#{inspect l} >> #{inspect r}"
 
-SUBSIGN = true
+SUBSIGN = false
 if SUBSIGN
   import rebinarize from parser
   S = rebinarize "Eq a => (Ord a => a -> a) -> a" 
   log "parser/test.rebinarize #subsign", inspect S
+
+COMPARE = true
+if COMPARE
+  import rebinarize, compare from parser
+  Sa = rebinarize "map :: (a -> b) -> [a] -> [b]"
+  Sb = rebinarize "map' :: Eq b => (x -> b) -> [Number] -> [b]"
+  --log "parser/test.rebinarize", inspect Sb
+  log "parser/test.compare", inspect {compare Sa, Sb}
