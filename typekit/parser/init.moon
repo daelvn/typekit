@@ -4,35 +4,19 @@
 import DEBUG        from  require "typekit.config"
 import inspect, log from (require "typekit.debug") DEBUG
 import parserError  from  require "typekit.parser.error"
+import trim,
+       contains,
+       isString,
+       isTable,
+       isUpper,
+       isLower,
+       getlr        from  require "typekit.commons"
 
 -- Signature format
 -- f :: Cl a => a -> b -> c
 -- f :: {a:b} -> {b:a}
 -- f :: [a] -> [b]
 -- f :: Eq a, Ord a => Maybe a -> Boolean
-
--- Trims spaces around a string
-trim = (str) ->
-  if str == nil                   then return nil
-  if x = str\match "^%s*(.-)%s*$" then x            else str
-
--- Checks if a table contains an element
-contains = (t, elem) ->
-  log "parser.contains #got", inspect {:t, :elem}
-  for _, v in pairs t
-    return true if elem == v
-  return false 
-
--- check for types
-isString = (v) -> "string" == (type v)
-isTable  = (v) -> "table"  == (type v)
-
--- lowercase and uppercase detection
-isUpper = (s) -> s\match "^%u"
-isLower = (s) -> s\match "^%l"
-
--- Gets left and right for a signature
-getlr = (sig) -> return sig.left, sig.right
 
 -- Returns and removes the name for a signature, if exists
 nameFor = (sig) ->
@@ -84,93 +68,47 @@ compareConstraints = (base, target) ->
       return false unless contains target[var], const
   return true
 
--- Checks that all parenthesis match and whether the top-most parens can be removed
-checkParenthesis = (sig) ->
-  log "parser.checkParenthesis #got", sig
-  i     = 0
-  depth = 0
-  over0 = 0 -- 0 -> hasnt gone over 0, 1 -> has gone over 1, 2 -> has gone back to 0 
-  --
-  canremove = true
-  for ch in sig\gmatch "."
-    i += 1
-    log "parser.checkParenthesis #status", "#{i}: #{ch} (#{depth}) OVERZERO=#{over0}"
-    switch ch
-      when "(" then depth += 1
-      when ")" then depth -= 1
-    parserError "Mismatching parenthesis for signature '#{sig}' at col #{i}" if depth < 0
-    switch over0
-      when 0 then over0     = 1 if depth > 0
-      when 1 then over0     = 2 if depth == 0
-      when 2 then canremove = false
-    log "parser.checkParenthesis #over", "over0 = 2" if over0 == 2
-  --
-  parserError "Mismatching parenthesis for signature '#{sig}' at col #{i}" if depth != 0
-  log "parser.checkParenthesis #ret", "returning #{canremove}"
-  canremove
+-- Base for checkParenthesis, checkList and checkTable
+checkX = (fname, ochar, cchar, charname) -> (sig) ->
+    log "parser.#{fname} #got", sig
+    i     = 0
+    depth = 0
+    over0 = 0 -- 0 -> hasnt gone over 0, 1 -> has gone over 1, 2 -> has gone back to 0 
+    --
+    canremove = true
+    for ch in sig\gmatch "."
+      i += 1
+      log "parser.#{fname} #status", "#{i}: #{ch} (#{depth}) OVERZERO=#{over0}"
+      switch ch
+        when ochar then depth += 1
+        when cchar then depth -= 1
+      parserError "Mismatching #{charname} for signature '#{sig}' at col #{i}" if depth < 0
+      switch over0
+        when 0 then over0     = 1 if depth > 0
+        when 1 then over0     = 2 if depth == 0
+        when 2 then canremove = false
+      log "parser.#{fname} #over", "over0 = 2" if over0 == 2
+    --
+    parserError "Mismatching #{charname} for signature '#{sig}' at col #{i}" if depth != 0
+    log "parser.#{fname} #ret", "returning #{canremove}"
+    canremove
 
 -- Removes top-most parens
 -- instead of using a pattern, has to be done manually to ensure they are the same parens
 -- for that we use checkParens
+checkParenthesis = checkX "checkParenthesis", "(", ")", "parenthesis"
 removeParenthesis = (sig) -> if x = sig\match "^%s*%((.+)%)%s*$" then x else sig
 
 -- turns [a] -> {container: "List", value: "a"}
-toList = (sig) ->
-  log "parser.toList #got", sig
-  i     = 0
-  depth = 0
-  over0 = 0 -- 0 -> hasnt gone over 0, 1 -> has gone over 1, 2 -> has gone back to 0 
-  --
-  canremove = true
-  for ch in sig\gmatch "."
-    i += 1
-    log "parser.toList #status", "#{i}: #{ch} (#{depth}) OVERZERO=#{over0}"
-    switch ch
-      when "[" then depth += 1
-      when "]" then depth -= 1
-    parserError "Mismatching brackets for signature '#{sig}' at col #{i}" if depth < 0
-    switch over0
-      when 0 then over0     = 1 if depth > 0
-      when 1 then over0     = 2 if depth == 0
-      when 2 then canremove = false
-    log "parser.toList #over", "over0 = 2" if over0 == 2
-  --
-  parserError "Mismatching brackets for signature '#{sig}' at col #{i}" if depth != 0
-  log "parser.toList #ret", "can remove? #{canremove}"
-  if canremove
-    return {container: "List", value: sig\match "^%[(.+)%]$"}
-  else
-    return sig
+checkList = checkX "checkList", "[", "]", "square brackets"
+toList = (sig) -> {container: "List", value: sig\match "^%[(.+)%]$"}
 
 -- turns {a:b} -> {container: "Table", key: "a", value: "b"}
+checkTable = checkX "checkTable", "{", "}", "curly brackets"
 toTable = (sig) ->
-  log "parser.toTable #got", sig
-  i     = 0
-  depth = 0
-  over0 = 0 -- 0 -> hasnt gone over 0, 1 -> has gone over 1, 2 -> has gone back to 0 
-  --
-  canremove = true
-  for ch in sig\gmatch "."
-    i += 1
-    log "parser.toTable #status", "#{i}: #{ch} (#{depth}) OVERZERO=#{over0}"
-    switch ch
-      when "[" then depth += 1
-      when "]" then depth -= 1
-    parserError "Mismatching brackets for signature '#{sig}' at col #{i}" if depth < 0
-    switch over0
-      when 0 then over0     = 1 if depth > 0
-      when 1 then over0     = 2 if depth == 0
-      when 2 then canremove = false
-    log "parser.toTable #over", "over0 = 2" if over0 == 2
-  --
-  parserError "Mismatching brackets for signature '#{sig}' at col #{i}" if depth != 0
-  log "parser.toTable #ret", "can remove? #{canremove}"
-  if canremove
-    key, value = sig\match "^{(.+):(.+)}$"
-    if key and value
-      return {container: "Table", :key, :value}
-    else
-      return sig
+  key, value = sig\match "^{(.+):(.+)}$"
+  if key and value
+    return {container: "Table", :key, :value}
   else
     return sig
 
@@ -184,14 +122,11 @@ binarize = (sig, child=false, pname, pconstl) ->
   name, sig    = nameFor sig
   constl, sig  = constraintsFor sig, pconstl
 
-  --name   = pname   if name == ""
-  --constl = pconstl if #constl == 0
-
   -- If we are inside another signature, check if we are scoped.
   if child
     if name != pname
       log "parser.binarize #name", "name changed from #{pname} to #{name}"
-    elseif not compareConstraints constl, pconstl
+    if not compareConstraints constl, pconstl
       log "parser.binarize #scope", "constraints changed, merging #{inspect constl} into #{inspect pconstl}"
       constl = mergeConstraints pconstl, constl
       log "parser.binarize #scope", "constraints merged, result is #{inspect constl}"
