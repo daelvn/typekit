@@ -23,8 +23,9 @@ contains = (t, elem) ->
     return true if elem == v
   return false 
 
--- check for strings
+-- check for types
 isString = (v) -> "string" == (type v)
+isTable  = (v) -> "table"  == (type v)
 
 -- lowercase and uppercase detection
 isUpper = (s) -> s\match "^%u"
@@ -243,7 +244,7 @@ binarize = (sig, child=false, pname, pconstl) ->
     left  = ""
   
   log "parser.binarize #ret", "#{left} >> #{right}"
-  return {left: (trim left), right: (trim right), :name, :constl}
+  return {left: (trim left), right: (trim right), :name, :constl, signature: true}
 
 -- recursively binarize
 rebinarize = (sig, child=false, pname, pconstl) ->
@@ -280,15 +281,89 @@ local compare
 
 -- compares string in a side
 compareSide = (base, against, cache={}, side="left") ->
+  -- @TODO Deal with type applications somewhere (Maybe [a] vs Maybe [Number], currently would not pass)
+  -- @TODO Probably implement as a table data=true
   status, msg = false, nil
   bx, ax      = base[side], against[side]
-  if "table" == type bx
-    if bx.container
-      -- @FIXME this solution is good and all but what about lists (tables) against simple types (strings)
-      -- @FIXME will probably have to remove the "same type" check
+  -- container/signature vs container/signature
+  if (isTable bx) and (isTable ax)
+    -- container vs container
+    if bx.container and ax.container
+      -- [a] vs [b]
+      if ("list" == bx.container) and ("list" == ax.container)
+        log "parser/compareSide #container", "delegating to compareSide again"
+        status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
+      -- [a] vs {b:c}
+      elseif ("list" == bx.container) and ("table" == ax.container)
+        if ax.key != "number" -- only {Number:a} can compare with [a]
+          status, msg = false, {[side]: "can't compare list with table with non-Number keys"}
+        else
+          log "parser/compareSide #container", "delegating to compareSide again"
+          status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
+      -- {a:b} vs [c]
+      elseif ("table" == bx.container) and ("list" == ax.container)
+        if bx.key != "number" -- only [a] can compare with {Number:a}
+          status, msg = false, {[side]: "can't compare list with table with non-Number keys"}
+        else
+          log "parser/compareSide #container", "delegating to compareSide again"
+          status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
+      -- {a:b} vs {c:d}
+      elseif ("table" == bx.container) and ("table" == ax.container)
+        log "parser/compareSide #container", "delegating key to compareSide"
+        kstatus, kmsg, cache = compareSide {[side]: bx.key}, {[side]: ax.key}, cache, side
+        log "parser/compareSide #container", "delegating value to compareSide"
+        vstatus, vmsg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
+        -- success
+        if kstatus and vstatus
+          status, msg = true, {[side]: "success"}
+        -- value failed
+        elseif kstatus
+          status, msg = vstatus, vmsg
+        -- key failed
+        elseif vstatus
+          status, msg = kstatus, kmsg
+        -- both failed
+        else
+          status, msg = false, {both: "failure comparing tables"}
+      -- unknown vs unknown ???
+      else status, msg = false, {[side]: "illegal container types '#{bx.container}' and '#{ax.container}'"}
+    -- container vs signature
+    elseif bx.container
+      status, msg = false, {[side]: "attempt to compare container against signature '#{ax}'"}
+    -- signature vs container
+    elseif ax.container
+      status, msg = false, {[side]: "attempt to compare container against signature '#{bx}'"}
+    -- signature vs signature
     else
-      status, msg = compare bx, ax, cache
-  elseif "string" == type bx
+      status, msg, cache = compare bx, ax, cache
+  -- container/signature vs simple
+  elseif (isTable bx) and (isString ax)
+    -- container vs simple
+    if bx.container
+      -- container vs Table
+      if ax == "Table"
+        status, msg = true, {[side]: "success"}
+      -- container vs simple
+      else
+        status, msg = false, {[side]: "cannot compare list or table against '#{ax}'"}
+    -- signature vs simple
+    else
+      status, msg = false, {[side]: "cannot compare signature against simple type"}
+  -- simple vs container/signature
+  elseif (isString bx) and (isTable ax)
+    -- container vs simple
+    if ax.container
+      -- container vs Table
+      if bx == "Table"
+        status, msg = true, {[side]: "success"}
+      -- container vs simple
+      else
+        status, msg = false, {[side]: "cannot compare list or table against '#{bx}'"}
+    -- signature vs simple
+    else
+      status, msg = false, {[side]: "cannot compare signature against simple type"}
+  -- simple vs simple 
+  elseif (isString bx) and (isString ax)
     switch caseFor bx, ax
       when 1 -- upper === upper   (1) must be equal and match constraints
         if bx != ax
@@ -318,25 +393,29 @@ compareSide = (base, against, cache={}, side="left") ->
 -- compare two nodes
 compare = (base, against, cache={}) ->
   log "parser/compare #got", inspect {:base, :against, :cache}
-  if (type base) != (type against)
-    return false, {both: "base and against are not same type"}, cache
-  elseif (type base.left) != (type against.left)
-    return false, {both: "left sides are not same type"}, cache
-  elseif (type base.right) != (type against.right)
-    return false, {both: "right sides are not same type"}, cache
-  --
+  -- Removed to be able to compare containers and simple types
+  --     if (type base) != (type against)
+  --       return false, {both: "base and against are not same type"}, cache
+  --     elseif (type base.left) != (type against.left)
+  --       return false, {both: "left sides are not same type"}, cache
+  --     elseif (type base.right) != (type against.right)
+  --       return false, {both: "right sides are not same type"}, cache
   left,  leftmsg,  cache = compareSide base, against, cache, "left"
   right, rightmsg, cache = compareSide base, against, cache, "right"
 
+  -- both failed
   if (not left) and (not right)
     log "parser/compare #lr", "notl notr"
     return false, {left: leftmsg, right: rightmsg}, cache
+  -- left failed
   elseif (not left) and right
     log "parser/compare #lr", "notl r"
     return false, {left: leftmsg}, cache
+  -- right failed
   elseif left and not right
     log "parser/compare #lr", "l notr"
     return false, {right: rightmsg}, cache
+  -- both success
   elseif left and right
     log "parser/compare #lr", "l r"
     return true, {both: "success"}, cache
