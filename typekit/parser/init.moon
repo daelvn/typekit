@@ -60,8 +60,8 @@ constraintsFor = (sig, pconstl={}) ->
   return constraints, sig
 
 -- Compares two sets of constraints
-compareConstraints = (base, target) ->
-  log "parser.compareConstraints #got", inspect {:base, :target}
+compareConstraints = (base={}, target={}) ->
+  log "parser.compareConstraints #got", inspect {:base, :target} if (#base > 0) and (#target > 0)
   for var, constl in pairs base
     return false unless target[var]
     for const in *constl
@@ -70,7 +70,8 @@ compareConstraints = (base, target) ->
 
 -- Base for checkParenthesis, checkList and checkTable
 checkX = (fname, ochar, cchar, charname) -> (sig) ->
-    log "parser.#{fname} #got", sig
+    log "parser.#{fname} #got", inspect sig
+    return false if "string" != type sig
     i     = 0
     depth = 0
     over0 = 0 -- 0 -> hasnt gone over 0, 1 -> has gone over 1, 2 -> has gone back to 0 
@@ -90,6 +91,7 @@ checkX = (fname, ochar, cchar, charname) -> (sig) ->
       log "parser.#{fname} #over", "over0 = 2" if over0 == 2
     --
     parserError "Mismatching #{charname} for signature '#{sig}' at col #{i}" if depth != 0
+    canremove = false if over0 == 0
     log "parser.#{fname} #ret", "returning #{canremove}"
     canremove
 
@@ -101,7 +103,7 @@ removeParenthesis = (sig) -> if x = sig\match "^%s*%((.+)%)%s*$" then x else sig
 
 -- turns [a] -> {container: "List", value: "a"}
 checkList = checkX "checkList", "[", "]", "square brackets"
-toList = (sig) -> {container: "List", value: sig\match "^%[(.+)%]$"}
+toList = (sig) -> {container: "List", value: if x = sig\match "^%[(.+)%]$" then x else sig}
 
 -- turns {a:b} -> {container: "Table", key: "a", value: "b"}
 checkTable = checkX "checkTable", "{", "}", "curly brackets"
@@ -186,12 +188,17 @@ rebinarize = (sig, child=false, pname, pconstl) ->
   S          = binarize sig, child, pname, pconstl
   l, r       = getlr S
   oldl, oldr = l, r
-  l          = toList toTable l
-  r          = toList toTable r
+  --
+  l = toList  l if checkList  l
+  l = toTable l if checkTable l
+  r = toList  r if checkList  r
+  r = toTable r if checkTable r
+  --
   l = rebinarize l, true, S.name, S.constl if (isString l) and l\match "%->"
   log "parser.rebinarize #ch", "l: #{oldl} >> #{inspect l}" if l != oldl
   r = rebinarize r, true, S.name, S.constl if (isString r) and r\match "%->"
   log "parser.rebinarize #ch", "r: #{oldr} >> #{inspect r}" if r != oldr
+  --
   {left: l, right: r, name: S.name, constl: S.constl}
 
 -- Returns the case comparing uppercase and lowercase
@@ -203,14 +210,21 @@ caseFor = (base, against) ->
   --   lower   <-- upper   (3)  cache upper, must match constraints
   --   lower    ?  lower   (4)  must match constraints
   -- @TODO The problem here is going to be dealing with tables and lists.
-  if     (isUpper base) and (isUpper against)
+  iub, iua, ilb, ila = (isUpper base), (isUpper against), (isLower base), (isLower against)
+  if iub and iua
     return 1
-  elseif (isUpper base) and (isLower against)
+  elseif iub and ila
     return 2
-  elseif (isLower base) and (isUpper against)
+  elseif ilb and iua
     return 3
-  elseif (isLower base) and (isLower against)
+  elseif ilb and ila
     return 4
+
+-- Merge messages
+mergeMessages = (a={}, b={}) ->
+  n = {k, v for k, v in pairs a}
+  for k, v in pairs b do n[k] = v
+  n
 
 local compare
 
@@ -225,25 +239,25 @@ compareSide = (base, against, cache={}, side="left") ->
     -- container vs container
     if bx.container and ax.container
       -- [a] vs [b]
-      if ("list" == bx.container) and ("list" == ax.container)
-        log "parser/compareSide #container", "delegating to compareSide again"
+      if ("List" == bx.container) and ("List" == ax.container)
+        log "parser/compareSide #container", "delegating to compareSide again #1"
         status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
       -- [a] vs {b:c}
-      elseif ("list" == bx.container) and ("table" == ax.container)
+      elseif ("List" == bx.container) and ("Table" == ax.container)
         if ax.key != "number" -- only {Number:a} can compare with [a]
           status, msg = false, {[side]: "can't compare list with table with non-Number keys"}
         else
-          log "parser/compareSide #container", "delegating to compareSide again"
+          log "parser/compareSide #container", "delegating to compareSide again #2"
           status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
       -- {a:b} vs [c]
-      elseif ("table" == bx.container) and ("list" == ax.container)
+      elseif ("Table" == bx.container) and ("List" == ax.container)
         if bx.key != "number" -- only [a] can compare with {Number:a}
           status, msg = false, {[side]: "can't compare list with table with non-Number keys"}
         else
-          log "parser/compareSide #container", "delegating to compareSide again"
+          log "parser/compareSide #container", "delegating to compareSide again #3"
           status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
       -- {a:b} vs {c:d}
-      elseif ("table" == bx.container) and ("table" == ax.container)
+      elseif ("Table" == bx.container) and ("Table" == ax.container)
         log "parser/compareSide #container", "delegating key to compareSide"
         kstatus, kmsg, cache = compareSide {[side]: bx.key}, {[side]: ax.key}, cache, side
         log "parser/compareSide #container", "delegating value to compareSide"
@@ -259,7 +273,7 @@ compareSide = (base, against, cache={}, side="left") ->
           status, msg = kstatus, kmsg
         -- both failed
         else
-          status, msg = false, {both: "failure comparing tables"}
+          status, msg = false, (mergeMessages vmsg, kmsg)
       -- unknown vs unknown ???
       else status, msg = false, {[side]: "illegal container types '#{bx.container}' and '#{ax.container}'"}
     -- container vs signature
@@ -338,22 +352,11 @@ compare = (base, against, cache={}) ->
   left,  leftmsg,  cache = compareSide base, against, cache, "left"
   right, rightmsg, cache = compareSide base, against, cache, "right"
 
-  -- both failed
-  if (not left) and (not right)
-    log "parser/compare #lr", "notl notr"
-    return false, {left: leftmsg, right: rightmsg}, cache
-  -- left failed
-  elseif (not left) and right
-    log "parser/compare #lr", "notl r"
-    return false, {left: leftmsg}, cache
-  -- right failed
-  elseif left and not right
-    log "parser/compare #lr", "l notr"
-    return false, {right: rightmsg}, cache
-  -- both success
-  elseif left and right
-    log "parser/compare #lr", "l r"
+  log "parser/compare #ret", "l:#{left} r:#{right}"
+  if left and right
     return true, {both: "success"}, cache
+  else
+    return false, (mergeMessages leftmsg, rightmsg), cache
 
 {
   :nameFor, :constraintsFor, :getlr

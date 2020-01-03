@@ -1,0 +1,163 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	//
+Array	typekit/parser/shapes.moon	/^Array         = ty.array_of$/;"	v
+BASE_TYPES	typekit/type/init.moon	/^BASE_TYPES = {$/;"	v
+BASIC	test/type.moon	/^BASIC = false$/;"	v
+BINARIZE	test/parser.moon	/^BINARIZE = false$/;"	v
+COMPARE	test/parser.moon	/^COMPARE = true$/;"	v
+CONSTRAINTS	test/parser.moon	/^CONSTRAINTS = false$/;"	v
+CUSTOM	test/type.moon	/^CUSTOM = false$/;"	v
+Custom	typekit/parser/shapes.moon	/^Custom        = ty.custom$/;"	v
+DEBUG	typekit/config.moon	/^  DEBUG: true$/;"	p
+Literal	typekit/parser/shapes.moon	/^Literal       = ty.literal$/;"	v
+Map	typekit/parser/shapes.moon	/^Map           = ty.map_of$/;"	v
+NAMES	test/parser.moon	/^NAMES = false$/;"	v
+Pair	test/type.moon	/^  Pair = (l, r) -> {:l, :r}$/;"	f
+Partial	typekit/parser/shapes.moon	/^Partial       = ty.partial$/;"	v
+REBINARIZE	test/parser.moon	/^REBINARIZE = false$/;"	v
+Resolver	typekit/type/init.moon	/^Resolver ==> setmetatable {$/;"	f
+S	test/parser.moon	/^  S = rebinarize "Eq a => (Ord a => a -> a) -> a" $/;"	f
+SUBSIGN	test/parser.moon	/^SUBSIGN = false$/;"	v
+Sa	test/parser.moon	/^  Sa = rebinarize "map :: (a -> b) -> [a] -> [b]"$/;"	f
+Sb	test/parser.moon	/^  Sb = rebinarize "map' :: Eq b => (x -> b) -> [Number] -> [b]"$/;"	f
+Shape	typekit/parser/shapes.moon	/^Shape         = ty.shape$/;"	v
+TABLE	test/type.moon	/^TABLE = true$/;"	v
+agglutinate	typekit/parser/init.COMM.moon	/^  agglutinate = (ch) -> if side then right ..= ch else left ..= ch$/;"	f
+agglutinate	typekit/parser/init.moon	/^  agglutinate = (ch) -> if side then right ..= ch else left ..= ch$/;"	f
+await	typekit/parser/init.COMM.moon	/^      await: flag.await_arrow$/;"	p
+await	typekit/parser/init.moon	/^      await: flag.await_arrow$/;"	p
+binarize	typekit/parser/init.COMM.moon	/^binarize = (sig) ->$/;"	f
+binarize	typekit/parser/init.moon	/^binarize = (sig, child=false, pname, pconstl) ->$/;"	f
+canremove	typekit/parser/init.COMM.moon	/^  canremove = true$/;"	v
+canremove	typekit/parser/init.moon	/^    canremove = false if over0 == 0$/;"	v
+canremove	typekit/parser/init.moon	/^    canremove = true$/;"	v
+caseFor	typekit/parser/init.moon	/^caseFor = (base, against) ->$/;"	f
+checkList	typekit/parser/init.moon	/^checkList = checkX "checkList", "[", "]", "square brackets"$/;"	v
+checkParenthesis	typekit/parser/init.COMM.moon	/^checkParenthesis = (sig) ->$/;"	f
+checkTable	typekit/parser/init.moon	/^checkTable = checkX "checkTable", "{", "}", "curly brackets"$/;"	v
+checkX	typekit/parser/init.moon	/^checkX = (fname, ochar, cchar, charname) -> (sig) ->$/;"	f
+compare	typekit/parser/init.moon	/^compare = (base, against, cache={}) ->$/;"	f
+compareConstraints	typekit/parser/init.moon	/^compareConstraints = (base, target) ->$/;"	f
+compareSide	typekit/parser/init.moon	/^compareSide = (base, against, cache={}, side="left") ->$/;"	f
+constl	typekit/parser/init.moon	/^  constl = {}$/;"	v
+constraints	typekit/parser/init.COMM.moon	/^  constraints = {}$/;"	v
+constraints	typekit/parser/init.moon	/^  constraints = {}$/;"	v
+constraintsFor	typekit/parser/init.COMM.moon	/^constraintsFor = (sig) ->$/;"	f
+constraintsFor	typekit/parser/init.moon	/^constraintsFor = (sig, pconstl={}) ->$/;"	f
+contains	typekit/commons.moon	/^contains = (t, elem) ->$/;"	f
+depth	typekit/parser/init.COMM.moon	/^  depth       = 0$/;"	v
+depth	typekit/parser/init.COMM.moon	/^  depth = 0$/;"	v
+depth	typekit/parser/init.moon	/^    depth = 0$/;"	v
+depth	typekit/parser/init.moon	/^  depth       = 0$/;"	v
+f	typekit/sign/init.moon	/^f = sign "f :: a -> b"/;"	f
+flag	typekit/parser/init.COMM.moon	/^  flag        = {}$/;"	v
+flag	typekit/parser/init.moon	/^  flag        = {}$/;"	v
+flag.await_arrow	typekit/parser/init.COMM.moon	/^          flag.await_arrow = false$/;"	v
+flag.await_arrow	typekit/parser/init.COMM.moon	/^        flag.await_arrow = false$/;"	v
+flag.await_arrow	typekit/parser/init.COMM.moon	/^        flag.await_arrow = true if depth == 0$/;"	v
+flag.await_arrow	typekit/parser/init.moon	/^          flag.await_arrow = false$/;"	v
+flag.await_arrow	typekit/parser/init.moon	/^        flag.await_arrow = false$/;"	v
+flag.await_arrow	typekit/parser/init.moon	/^        flag.await_arrow = true if depth == 0$/;"	v
+getlr	typekit/commons.moon	/^getlr = (sig) -> return sig.left, sig.right$/;"	f
+hasMeta	typekit/type/init.moon	/^hasMeta = Resolver {$/;"	v
+i	typekit/parser/init.COMM.moon	/^  i     = 0$/;"	v
+i	typekit/parser/init.moon	/^    i     = 0$/;"	v
+is	typekit/type/init.moon	/^    is = t$/;"	v
+is	typekit/type/init.moon	/^  is = typeof l[1]$/;"	v
+isIO	typekit/type/init.moon	/^isIO = Resolver {$/;"	v
+isLower	typekit/commons.moon	/^isLower = (s) -> s\\match "^%l"$/;"	f
+isPair	test/type.moon	/^  isPair = Resolver {$/;"	v
+isString	typekit/commons.moon	/^isString = (v) -> "string" == (type v)$/;"	f
+isTable	typekit/commons.moon	/^isTable  = (v) -> "table"  == (type v)$/;"	f
+isUpper	typekit/commons.moon	/^isUpper = (s) -> s\\match "^%u"$/;"	f
+l	typekit/parser/init.COMM.moon	/^  l = rebinarize l if l\\match "%->"$/;"	f
+l	typekit/parser/init.moon	/^  l = rebinarize l, true, S.name, S.constl if (isString l) and l\\match "%->"$/;"	f
+l	typekit/parser/init.moon	/^  l = toList  l if checkList  l$/;"	v
+l	typekit/parser/init.moon	/^  l = toTable l if checkTable l$/;"	v
+left	typekit/parser/init.COMM.moon	/^    left  = ""$/;"	v
+left	typekit/parser/init.moon	/^    left  = ""$/;"	v
+log	typekit/debug.moon	/^  log                = typekitLgr!$/;"	v
+mergeConstraints	typekit/parser/init.moon	/^mergeConstraints = (target, base) ->$/;"	f
+mergeMessages	typekit/parser/init.moon	/^mergeMessages = (a={}, b={}) ->$/;"	f
+meta	typekit/type/init.moon	/^      meta = type_mt.__type$/;"	v
+meta_pos	typekit/type/init.moon	/^  meta_pos: 1$/;"	p
+name	test/type.moon	/^    name:    "isPair"$/;"	p
+name	typekit/parser/init.COMM.moon	/^    name = s$/;"	v
+name	typekit/parser/init.COMM.moon	/^  name = false$/;"	v
+name	typekit/parser/init.moon	/^    name = s$/;"	v
+name	typekit/type/init.moon	/^  name:     "isIO"$/;"	p
+name	typekit/type/init.moon	/^  name:    "hasMeta"$/;"	p
+name	typekit/type/init.moon	/^  name:    "type1"$/;"	p
+nameFor	typekit/parser/init.COMM.moon	/^nameFor = (sig) ->$/;"	f
+nameFor	typekit/parser/init.moon	/^nameFor = (sig) ->$/;"	f
+native	test/type.moon	/^native                 = type$/;"	v
+native	typekit/type/init.moon	/^native = type$/;"	v
+nil	typekit/type/init.moon	/^  nil:      "Nil"$/;"	p
+number	typekit/type/init.moon	/^  number:   "Number"$/;"	p
+over0	typekit/parser/init.COMM.moon	/^  over0 = 0 -- 0 -> hasnt gone over 0, 1 -> has gone over 1, 2 -> has gone back to 0 $/;"	f
+over0	typekit/parser/init.moon	/^    over0 = 0 -- 0 -> hasnt gone over 0, 1 -> has gone over 1, 2 -> has gone back to 0 $/;"	f
+parser	test/parser.moon	/^parser                 =  require "typekit.parser"$/;"	v
+parserError	typekit/parser/error.moon	/^parserError = (msg) ->$/;"	f
+r	typekit/parser/init.COMM.moon	/^  r = rebinarize r if r\\match "%->"$/;"	f
+r	typekit/parser/init.moon	/^  r = rebinarize r, true, S.name, S.constl if (isString r) and r\\match "%->"$/;"	f
+r	typekit/parser/init.moon	/^  r = toList  r if checkList  r$/;"	v
+r	typekit/parser/init.moon	/^  r = toTable r if checkTable r$/;"	v
+rebinarize	typekit/parser/init.COMM.moon	/^rebinarize = (sig) ->$/;"	f
+rebinarize	typekit/parser/init.moon	/^rebinarize = (sig, child=false, pname, pconstl) ->$/;"	f
+registerResolver	typekit/type/init.moon	/^registerResolver = (R) ->$/;"	f
+removeParenthesis	typekit/parser/init.COMM.moon	/^removeParenthesis = (sig) -> if x = sig\\match "^%s*%((.+)%)%s*$" then x else sig$/;"	f
+removeParenthesis	typekit/parser/init.moon	/^removeParenthesis = (sig) -> if x = sig\\match "^%s*%((.+)%)%s*$" then x else sig$/;"	f
+resolve	test/type.moon	/^    resolve: (v) -> if ((native v) == "table") and v.l and v.r then "Pair" else false$/;"	m
+resolve	typekit/type/init.moon	/^  resolve:  (v) -> (io.type v) and "IO" or false$/;"	m
+resolve	typekit/type/init.moon	/^  resolve: (v) -> BASE_TYPES[native v]$/;"	m
+resolve	typekit/type/init.moon	/^  resolve: (v) ->$/;"	m
+resolve	typekit/type/init.moon	/^  resolve: (v) =>$/;"	m
+resolver_names	typekit/type/init.moon	/^  resolver_names: {[type1]: "type1"}$/;"	p
+resolver_order	typekit/type/init.moon	/^  resolver_order: {[type1]: 1}$/;"	p
+resolvers	typekit/type/init.moon	/^  resolvers: {type1}$/;"	p
+returns	test/type.moon	/^    returns: {"Pair"}$/;"	p
+returns	typekit/type/init.moon	/^  returns:  {"IO"}$/;"	p
+right	typekit/parser/init.COMM.moon	/^    right = left$/;"	v
+right	typekit/parser/init.moon	/^    right = left$/;"	v
+side	typekit/parser/init.COMM.moon	/^          side             = true$/;"	v
+side	typekit/parser/init.COMM.moon	/^  side        = false -- false -> left, true -> right$/;"	f
+side	typekit/parser/init.moon	/^          side             = true$/;"	v
+side	typekit/parser/init.moon	/^  side        = false -- false -> left, true -> right$/;"	f
+sig	typekit/parser/init.COMM.moon	/^  sig         = sig\\gsub "^%s*(.+)%s*=>%s*", (s) ->$/;"	f
+sig	typekit/parser/init.COMM.moon	/^  sig  = sig\\gsub "^%s*(.+)%s*::%s*", (s) ->$/;"	f
+sig	typekit/parser/init.moon	/^  sig         = sig\\gsub "^%s*(.-)%s*=>%s*", (s) ->$/;"	f
+sig	typekit/parser/init.moon	/^  sig  = sig\\gsub "^%s*(.+)%s*::%s*", (s) ->$/;"	f
+sign	typekit/sign/init.moon	/^sign = (sig) -> setmetatable {$/;"	f
+signError	typekit/sign/error.moon	/^signError = (msg) ->$/;"	f
+signature	typekit/parser/shapes.moon	/^signature = {}$/;"	v
+signature	typekit/sign/init.moon	/^  signature: sig$/;"	p
+signature.Constraint	typekit/parser/shapes.moon	/^signature.Constraint = (const) ->$/;"	f
+signature.Constraints	typekit/parser/shapes.moon	/^signature.Constraints = (constraints) -> Custom (cl) ->$/;"	f
+signatures	test/parser.moon	/^signatures = {$/;"	v
+start	typekit/type/init.moon	/^      start = false$/;"	v
+start	typekit/type/init.moon	/^  start = true$/;"	v
+t	typekit/type/init.moon	/^    t = typeof v$/;"	v
+table	typekit/type/init.moon	/^  table:    "Table"$/;"	p
+thread	typekit/type/init.moon	/^  thread:   "Thread"$/;"	p
+toList	typekit/parser/init.moon	/^toList = (sig) -> {container: "List", value: if x = sig\\match "^%[(.+)%]$" then x else sig}$/;"	f
+toTable	typekit/parser/init.moon	/^toTable = (sig) ->$/;"	f
+trim	typekit/commons.moon	/^trim = (str) ->$/;"	f
+trim	typekit/parser/init.COMM.moon	/^trim = (str) -> if x = str\\match "^%s*(.-)%s*$" then x else str$/;"	f
+ts	typekit/parser/shapes.moon	/^ts = require "tableshape"$/;"	v
+ty	typekit/parser/shapes.moon	/^ty = ts.types$/;"	v
+type	test/type.moon	/^type                   =  require "typekit.type"$/;"	v
+type1	typekit/type/init.moon	/^type1 = Resolver {$/;"	v
+typeError	typekit/type/error.moon	/^typeError = (msg) ->$/;"	f
+typekitLgr	typekit/debug.moon	/^  typekitLgr         = logger.default!$/;"	v
+typekitLgr.exclude	typekit/debug.moon	/^  typekitLgr.exclude = {$/;"	v
+typekitLgr.header	typekit/debug.moon	/^  typekitLgr.header  = (T) => style "%{bold green}#{@name}%{blue}.%{white}#{T} %{yellow}$ "$/;"	f
+typekitLgr.name	typekit/debug.moon	/^  typekitLgr.name    = "typekit"$/;"	v
+typekitLgr.time	typekit/debug.moon	/^  typekitLgr.time    =     => ""$/;"	f
+typeof	typekit/type/init.moon	/^typeof = setmetatable {$/;"	v
+typeofList	typekit/type/init.moon	/^typeofList = (l) ->$/;"	f
+typeofTable	typekit/type/init.moon	/^typeofTable = (t) ->$/;"	f
+userdata	typekit/type/init.moon	/^  userdata: "Userdata"$/;"	p

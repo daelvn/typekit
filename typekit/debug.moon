@@ -27,6 +27,18 @@
     "parser.checkParenthesis #status"
     "parser.checkParenthesis #ret"
     "parser.checkParenthesis #got"
+    -- parser.checkList
+    "parser.checkList #match"
+    "parser.checkList #over"
+    "parser.checkList #status"
+    "parser.checkList #ret"
+    "parser.checkList #got"
+    -- parser.checkTable
+    "parser.checkTable #match"
+    "parser.checkTable #over"
+    "parser.checkTable #status"
+    "parser.checkTable #ret"
+    "parser.checkTable #got"
     -- type.typeof.resolve
     "type.typeof.resolve #got"
     "type.typeof.resolve #resolved"

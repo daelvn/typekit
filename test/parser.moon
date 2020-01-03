@@ -58,7 +58,7 @@ if SUBSIGN
 COMPARE = true
 if COMPARE
   import rebinarize, compare from parser
-  Sa = rebinarize "map :: (a -> b) -> [a] -> [b]"
+  Sa = rebinarize "map  :: Ord b => (a -> b) -> [a] -> [b]"
   Sb = rebinarize "map' :: Eq b => (x -> b) -> [Number] -> [b]"
-  --log "parser/test.rebinarize", inspect Sb
-  log "parser/test.compare", inspect {compare Sa, Sb}
+  log "parser/test.rebinarize", inspect Sb
+  --log "parser/test.compare", inspect {compare Sa, Sb}
