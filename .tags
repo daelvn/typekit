@@ -21,9 +21,15 @@ Partial	typekit/parser/shapes.moon	/^Partial       = ty.partial$/;"	v
 REBINARIZE	test/parser.moon	/^REBINARIZE = false$/;"	v
 Resolver	typekit/type/init.moon	/^Resolver ==> setmetatable {$/;"	f
 S	test/parser.moon	/^  S = rebinarize "Eq a => (Ord a => a -> a) -> a" $/;"	f
+S.left	typekit/parser/init.moon	/^  S.left  = toList        S.left  if checkList        S.left$/;"	v
+S.left	typekit/parser/init.moon	/^  S.left  = toTable       S.left  if checkTable       S.left$/;"	v
+S.left	typekit/parser/init.moon	/^  S.left = rebinarize S.left, true, S.name, S.constl if (isString S.left) and S.left\\match "%->"$/;"	f
+S.right	typekit/parser/init.moon	/^  S.right = rebinarize S.right, true, S.name, S.constl if (isString S.right) and S.right\\match "%->"$/;"	f
+S.right	typekit/parser/init.moon	/^  S.right = toList        S.right if checkList        S.right$/;"	v
+S.right	typekit/parser/init.moon	/^  S.right = toTable       S.right if checkTable       S.right$/;"	v
 SUBSIGN	test/parser.moon	/^SUBSIGN = false$/;"	v
-Sa	test/parser.moon	/^  Sa = rebinarize "map :: (a -> b) -> [a] -> [b]"$/;"	f
-Sb	test/parser.moon	/^  Sb = rebinarize "map' :: Eq b => (x -> b) -> [Number] -> [b]"$/;"	f
+Sa	test/parser.moon	/^  Sa = rebinarize "maybe  :: b -> (a -> b) -> Maybe a -> b"$/;"	f
+Sb	test/parser.moon	/^  Sb = rebinarize "maybe' :: Eq b => x -> (b -> x) -> Maybe b -> x"$/;"	f
 Shape	typekit/parser/shapes.moon	/^Shape         = ty.shape$/;"	v
 TABLE	test/type.moon	/^TABLE = true$/;"	v
 agglutinate	typekit/parser/init.COMM.moon	/^  agglutinate = (ch) -> if side then right ..= ch else left ..= ch$/;"	f
@@ -35,14 +41,15 @@ binarize	typekit/parser/init.moon	/^binarize = (sig, child=false, pname, pconstl
 canremove	typekit/parser/init.COMM.moon	/^  canremove = true$/;"	v
 canremove	typekit/parser/init.moon	/^    canremove = false if over0 == 0$/;"	v
 canremove	typekit/parser/init.moon	/^    canremove = true$/;"	v
-caseFor	typekit/parser/init.moon	/^caseFor = (base, against) ->$/;"	f
+caseFor	typekit/parser/compare.moon	/^caseFor = (base, against) ->$/;"	f
+checkApplication	typekit/parser/init.moon	/^checkApplication = (sig) ->$/;"	f
 checkList	typekit/parser/init.moon	/^checkList = checkX "checkList", "[", "]", "square brackets"$/;"	v
 checkParenthesis	typekit/parser/init.COMM.moon	/^checkParenthesis = (sig) ->$/;"	f
 checkTable	typekit/parser/init.moon	/^checkTable = checkX "checkTable", "{", "}", "curly brackets"$/;"	v
 checkX	typekit/parser/init.moon	/^checkX = (fname, ochar, cchar, charname) -> (sig) ->$/;"	f
-compare	typekit/parser/init.moon	/^compare = (base, against, cache={}) ->$/;"	f
-compareConstraints	typekit/parser/init.moon	/^compareConstraints = (base, target) ->$/;"	f
-compareSide	typekit/parser/init.moon	/^compareSide = (base, against, cache={}, side="left") ->$/;"	f
+compare	typekit/parser/compare.moon	/^compare = (base, against, cache={}) ->$/;"	f
+compareConstraints	typekit/parser/compare.moon	/^compareConstraints = (base={}, target={}) ->$/;"	f
+compareSide	typekit/parser/compare.moon	/^compareSide = (base, against, cache={}, side="left") ->$/;"	f
 constl	typekit/parser/init.moon	/^  constl = {}$/;"	v
 constraints	typekit/parser/init.COMM.moon	/^  constraints = {}$/;"	v
 constraints	typekit/parser/init.moon	/^  constraints = {}$/;"	v
@@ -75,14 +82,11 @@ isString	typekit/commons.moon	/^isString = (v) -> "string" == (type v)$/;"	f
 isTable	typekit/commons.moon	/^isTable  = (v) -> "table"  == (type v)$/;"	f
 isUpper	typekit/commons.moon	/^isUpper = (s) -> s\\match "^%u"$/;"	f
 l	typekit/parser/init.COMM.moon	/^  l = rebinarize l if l\\match "%->"$/;"	f
-l	typekit/parser/init.moon	/^  l = rebinarize l, true, S.name, S.constl if (isString l) and l\\match "%->"$/;"	f
-l	typekit/parser/init.moon	/^  l = toList  l if checkList  l$/;"	v
-l	typekit/parser/init.moon	/^  l = toTable l if checkTable l$/;"	v
 left	typekit/parser/init.COMM.moon	/^    left  = ""$/;"	v
 left	typekit/parser/init.moon	/^    left  = ""$/;"	v
 log	typekit/debug.moon	/^  log                = typekitLgr!$/;"	v
 mergeConstraints	typekit/parser/init.moon	/^mergeConstraints = (target, base) ->$/;"	f
-mergeMessages	typekit/parser/init.moon	/^mergeMessages = (a={}, b={}) ->$/;"	f
+mergeMessages	typekit/parser/compare.moon	/^mergeMessages = (a={}, b={}) ->$/;"	f
 meta	typekit/type/init.moon	/^      meta = type_mt.__type$/;"	v
 meta_pos	typekit/type/init.moon	/^  meta_pos: 1$/;"	p
 name	test/type.moon	/^    name:    "isPair"$/;"	p
@@ -102,10 +106,8 @@ over0	typekit/parser/init.COMM.moon	/^  over0 = 0 -- 0 -> hasnt gone over 0, 1 -
 over0	typekit/parser/init.moon	/^    over0 = 0 -- 0 -> hasnt gone over 0, 1 -> has gone over 1, 2 -> has gone back to 0 $/;"	f
 parser	test/parser.moon	/^parser                 =  require "typekit.parser"$/;"	v
 parserError	typekit/parser/error.moon	/^parserError = (msg) ->$/;"	f
+parts.data	typekit/parser/init.moon	/^  parts.data = sig$/;"	v
 r	typekit/parser/init.COMM.moon	/^  r = rebinarize r if r\\match "%->"$/;"	f
-r	typekit/parser/init.moon	/^  r = rebinarize r, true, S.name, S.constl if (isString r) and r\\match "%->"$/;"	f
-r	typekit/parser/init.moon	/^  r = toList  r if checkList  r$/;"	v
-r	typekit/parser/init.moon	/^  r = toTable r if checkTable r$/;"	v
 rebinarize	typekit/parser/init.COMM.moon	/^rebinarize = (sig) ->$/;"	f
 rebinarize	typekit/parser/init.moon	/^rebinarize = (sig, child=false, pname, pconstl) ->$/;"	f
 registerResolver	typekit/type/init.moon	/^registerResolver = (R) ->$/;"	f
@@ -143,6 +145,7 @@ start	typekit/type/init.moon	/^  start = true$/;"	v
 t	typekit/type/init.moon	/^    t = typeof v$/;"	v
 table	typekit/type/init.moon	/^  table:    "Table"$/;"	p
 thread	typekit/type/init.moon	/^  thread:   "Thread"$/;"	p
+toApplication	typekit/parser/init.moon	/^toApplication = (sig) ->$/;"	f
 toList	typekit/parser/init.moon	/^toList = (sig) -> {container: "List", value: if x = sig\\match "^%[(.+)%]$" then x else sig}$/;"	f
 toTable	typekit/parser/init.moon	/^toTable = (sig) ->$/;"	f
 trim	typekit/commons.moon	/^trim = (str) ->$/;"	f
