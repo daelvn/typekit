@@ -13,9 +13,9 @@ import contains,
 compareConstraints = (base={}, target={}) ->
   log "parser.compareConstraints #got", inspect {:base, :target} if (#base > 0) and (#target > 0)
   for var, constl in pairs base
-    return false unless target[var]
+    return false, "'#{var}' has no constraints" unless target[var]
     for const in *constl
-      return false unless contains target[var], const
+      return false, "'#{var}' has no '#{const}' constraint" unless contains target[var], const
   return true
 
 -- Merge messages
@@ -53,8 +53,21 @@ compareSide = (base, against, cache={}, side="left") ->
   bx, ax      = base[side], against[side]
   -- container/signature vs container/signature
   if (isTable bx) and (isTable ax)
+    -- appl vs appl
+    if bx.data and ax.data
+      -- @TODO This is untested
+      -- delegate `?` in `T ?`
+      status, msg = compareSide {[side]: bx[#bx]}, {[side]: ax[#ax]}, cache, side
+      if #bx != #ax
+        status, msg = false, {[side]: "different amount of applications in '#{bx.data}' and '#{ax.data}'"}
+      else
+        status, msg = true, {}
+        for i=1,(#bx-1)
+          if bx[i] != ax[i]
+            status, msg = false, {[side]: "applications '#{bx.data}' and '#{ax.data}' do not match"}
+            break
     -- container vs container
-    if bx.container and ax.container
+    elseif bx.container and ax.container
       -- [a] vs [b]
       if ("List" == bx.container) and ("List" == ax.container)
         log "parser/compareSide #container", "delegating to compareSide again #1"
@@ -81,7 +94,7 @@ compareSide = (base, against, cache={}, side="left") ->
         vstatus, vmsg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
         -- success
         if kstatus and vstatus
-          status, msg = true, {[side]: "success"}
+          status, msg = true, {}
         -- value failed
         elseif kstatus
           status, msg = vstatus, vmsg
@@ -95,20 +108,23 @@ compareSide = (base, against, cache={}, side="left") ->
       else status, msg = false, {[side]: "illegal container types '#{bx.container}' and '#{ax.container}'"}
     -- container vs signature
     elseif bx.container
-      status, msg = false, {[side]: "attempt to compare container against signature '#{ax}'"}
+      status, msg = false, {[side]: "attempt to compare container against signature '#{ax.signature}'"}
     -- signature vs container
     elseif ax.container
-      status, msg = false, {[side]: "attempt to compare container against signature '#{bx}'"}
+      status, msg = false, {[side]: "attempt to compare container against signature '#{bx.signature}'"}
     -- signature vs signature
-    else
+    elseif bx.signature and ax.signature
       status, msg, cache = compare bx, ax, cache
+    -- ???
+    else
+      status, msg = false, {[side]: "illegal table types"}
   -- container/signature vs simple
   elseif (isTable bx) and (isString ax)
     -- container vs simple
     if bx.container
       -- container vs Table
       if ax == "Table"
-        status, msg = true, {[side]: "success"}
+        status, msg = true, {}
       -- container vs simple
       else
         status, msg = false, {[side]: "cannot compare list or table against '#{ax}'"}
@@ -121,7 +137,7 @@ compareSide = (base, against, cache={}, side="left") ->
     if ax.container
       -- container vs Table
       if bx == "Table"
-        status, msg = true, {[side]: "success"}
+        status, msg = true, {}
       -- container vs simple
       else
         status, msg = false, {[side]: "cannot compare list or table against '#{bx}'"}
@@ -130,30 +146,31 @@ compareSide = (base, against, cache={}, side="left") ->
       status, msg = false, {[side]: "cannot compare signature against simple type"}
   -- simple vs simple 
   elseif (isString bx) and (isString ax)
+    ccstatus, ccerr = compareConstraints base.constl, against.constl
     switch caseFor bx, ax
       when 1 -- upper === upper   (1) must be equal and match constraints
         if bx != ax
           status, msg = false, {[side]: "type '#{ax}' does not match expected type '#{bx}'"}
-        elseif not compareConstraints base.constl, against.constl
-          status, msg = false, {[side]: "constraints in #{side} side do not match"}
+        elseif not ccstatus
+          status, msg = false, {[side]: "constraints do not match: #{ccerr}"}
         else
-          status, msg = true, {[side]: "success"}
+          status, msg = true, {}
       when 2 -- upper  ?  lower   (2) must match constraints
-        unless compareConstraints base.constl, against.constl
-          status, msg = false, {[side]: "constraints in #{side} side do not match"}
+        unless ccstatus
+          status, msg = false, {[side]: "constraints do not match: #{ccerr}"}
         else
-          status, msg = true, {[side]: "success"}
+          status, msg = true, {}
       when 3 -- lower <-- upper   (3) cache upper, must match constraints
-        unless compareConstraints base.constl, against.constl
-          status, msg = false, {[side]: "constraints in #{side} side do not match"}
+        unless ccstatus
+          status, msg = false, {[side]: "constraints do not match: #{ccerr}"}
         else
           cache[bx] = ax
-          status, msg = true, {[side]: "success"}
+          status, msg = true, {}
       when 4 -- lower  ?  lower   (4) must match constraints
-        unless compareConstraints base.constl, against.constl
-          status, msg = false, {[side]: "constraints in #{side} side do not match"}
+        unless ccstatus
+          status, msg = false, {[side]: "constraints do not match: #{ccerr}"}
         else
-          status, msg = true, {[side]: "success"}
+          status, msg = true, {}
   return status, msg, cache
 
 -- compare two nodes
@@ -171,7 +188,7 @@ compare = (base, against, cache={}) ->
 
   log "parser/compare #ret", "l:#{left} r:#{right}"
   if left and right
-    return true, {both: "success"}, cache
+    return true, {}, cache
   else
     return false, (mergeMessages leftmsg, rightmsg), cache
 

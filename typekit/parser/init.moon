@@ -101,6 +101,18 @@ toTable = (sig) ->
   else
     return sig
 
+-- turns 'Maybe a' -> {data: "Maybe a", "Maybe", "a"}
+checkApplication = (sig) ->
+  return false if "string" != type sig
+  return false if sig\match "%->"
+  return false if not sig\match " "
+  return false if sig\match "^[%{%[]"
+  return true
+toApplication = (sig) ->
+  parts      = [part for part in sig\gmatch "%S+"]
+  parts.data = sig
+  return parts
+
 -- Splits a signature in two by an arrow ->
 -- returns tree
 binarize = (sig, child=false, pname, pconstl) ->
@@ -113,7 +125,7 @@ binarize = (sig, child=false, pname, pconstl) ->
 
   -- If we are inside another signature, check if we are scoped.
   if child
-    constl = mergeConstraints pconstl, constl
+    constl = mergeConstraints constl, pconstl
     if name != pname
       log "parser.binarize #name", "name changed from #{pname} to #{name}"
   
@@ -165,7 +177,7 @@ binarize = (sig, child=false, pname, pconstl) ->
     left  = ""
   
   log "parser.binarize #ret", "#{left} >> #{right}"
-  return {left: (trim left), right: (trim right), :name, :constl, signature: true}
+  return {left: (trim left), right: (trim right), :name, :constl, signature: sig}
 
 -- recursively binarize
 rebinarize = (sig, child=false, pname, pconstl) ->
@@ -173,17 +185,19 @@ rebinarize = (sig, child=false, pname, pconstl) ->
   l, r       = getlr S
   oldl, oldr = l, r
   --
-  l = toList  l if checkList  l
-  l = toTable l if checkTable l
-  r = toList  r if checkList  r
-  r = toTable r if checkTable r
+  S.left  = toList        S.left  if checkList        S.left
+  S.left  = toTable       S.left  if checkTable       S.left
+  S.left  = toApplication S.left  if checkApplication S.left
+  S.right = toList        S.right if checkList        S.right
+  S.right = toTable       S.right if checkTable       S.right
+  S.right = toApplication S.right if checkApplication S.right
   --
-  l = rebinarize l, true, S.name, S.constl if (isString l) and l\match "%->"
-  log "parser.rebinarize #ch", "l: #{oldl} >> #{inspect l}" if l != oldl
-  r = rebinarize r, true, S.name, S.constl if (isString r) and r\match "%->"
-  log "parser.rebinarize #ch", "r: #{oldr} >> #{inspect r}" if r != oldr
+  S.left = rebinarize S.left, true, S.name, S.constl if (isString S.left) and S.left\match "%->"
+  log "parser.rebinarize #ch", "l: #{oldl} >> #{inspect l}" if S.left != oldl
+  S.right = rebinarize S.right, true, S.name, S.constl if (isString S.right) and S.right\match "%->"
+  log "parser.rebinarize #ch", "r: #{oldr} >> #{inspect r}" if S.right != oldr
   --
-  {left: l, right: r, name: S.name, constl: S.constl}
+  S
 
 {
   :nameFor, :constraintsFor, :getlr
