@@ -27,8 +27,24 @@ isLower = (s) -> s\match "^%l"
 -- Gets left and right for a signature
 getlr = (sig) -> return sig.left, sig.right
 
+-- Sets the metatype for a table
+metatype = (T) -> (t) ->
+  if x = getmetatable t
+    x.__type = T
+  else
+    setmetatable x, __type: T
+  t
+
+-- checks whether a table is empty
+empty = (t) ->
+  ct = 0
+  for k, v in pairs t do ct += 1
+  ct == 0
+
 {
   :trim, :isUpper, :isLower, :isString
   :contains, :isTable
   :getlr
+  :metatype
+  :empty
 }

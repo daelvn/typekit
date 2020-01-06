@@ -3,20 +3,36 @@
 -- Compare signature trees
 import DEBUG        from  require "typekit.config"
 import inspect, log from (require "typekit.debug") DEBUG
+import classesFor   from  require "typekit.type.class"
 import contains,
        isString,
        isTable,
        isUpper,
-       isLower      from  require "typekit.commons"
+       isLower,
+       empty        from  require "typekit.commons"
 
 -- Compares two sets of constraints
-compareConstraints = (base={}, target={}) ->
-  log "parser.compareConstraints #got", inspect {:base, :target} if (#base > 0) and (#target > 0)
-  for var, constl in pairs base
-    return false, "'#{var}' has no constraints" unless target[var]
-    for const in *constl
-      return false, "'#{var}' has no '#{const}' constraint" unless contains target[var], const
-  return true
+-- We also get bx and ax because we don't want *any* variable with the same constraints
+compareConstraints = (base={}, target={}, bx, ax) ->
+  -- FIXME Looking for same name var (incorrect)
+  log "parser.compareConstraints #got", inspect {:base, :target, :bx, :ax}
+  -- can check for constraints
+  -- FIXME Constraints are very broken.
+  if isUpper ax
+    sel = base[bx]
+    cll = classesFor ax
+    for tc in *sel
+      return false, "'#{ax}' is lacking constraint '#{tc}'" unless contains cll, tc
+    return true, ""
+  -- cannot check for constraints
+  else
+    sel = base[bx]
+    agt = target[ax]
+    return false, "'#{ax}' has no constraints" unless agt
+    for tc in *sel
+      return false, "'#{ax}' is lacking constraint #{tc}" unless contains agt, tc
+    return true, ""
+
 
 -- Merge messages
 mergeMessages = (a={}, b={}) ->
@@ -32,7 +48,6 @@ caseFor = (base, against) ->
   --   upper    ?  lower   (2)  must match constraints
   --   lower   <-- upper   (3)  cache upper, must match constraints
   --   lower    ?  lower   (4)  must match constraints
-  -- @TODO The problem here is going to be dealing with tables and lists.
   iub, iua, ilb, ila = (isUpper base), (isUpper against), (isLower base), (isLower against)
   if iub and iua
     return 1
@@ -47,50 +62,51 @@ local compare
 
 -- compares string in a side
 compareSide = (base, against, cache={}, side="left") ->
-  -- @TODO Deal with type applications somewhere (Maybe [a] vs Maybe [Number], currently would not pass)
-  -- @TODO Probably implement as a table data=true
+  -- TODO Cache handling
   status, msg = false, nil
   bx, ax      = base[side], against[side]
+  log "parser.compareSide #got", inspect {
+    :base, :against, :cache, :side, :bx, :ax
+  }
   -- container/signature vs container/signature
   if (isTable bx) and (isTable ax)
     -- appl vs appl
     if bx.data and ax.data
-      -- @TODO This is untested
-      -- delegate `?` in `T ?`
       status, msg = compareSide {[side]: bx[#bx]}, {[side]: ax[#ax]}, cache, side
       if #bx != #ax
         status, msg = false, {[side]: "different amount of applications in '#{bx.data}' and '#{ax.data}'"}
       else
         status, msg = true, {}
         for i=1,(#bx-1)
-          if bx[i] != ax[i]
-            status, msg = false, {[side]: "applications '#{bx.data}' and '#{ax.data}' do not match"}
+          lstat, lmsg, cache = compareSide {[side]: bx[i], :constl}, {[side]: ax[i], :constl}, cache, side
+          unless lstat
+            status, msg = lstat, lmsg
             break
     -- container vs container
     elseif bx.container and ax.container
       -- [a] vs [b]
       if ("List" == bx.container) and ("List" == ax.container)
-        log "parser/compareSide #container", "delegating to compareSide again #1"
+        log "parser.compareSide #container", "delegating to compareSide again #1"
         status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
       -- [a] vs {b:c}
       elseif ("List" == bx.container) and ("Table" == ax.container)
         if ax.key != "number" -- only {Number:a} can compare with [a]
           status, msg = false, {[side]: "can't compare list with table with non-Number keys"}
         else
-          log "parser/compareSide #container", "delegating to compareSide again #2"
+          log "parser.compareSide #container", "delegating to compareSide again #2"
           status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
       -- {a:b} vs [c]
       elseif ("Table" == bx.container) and ("List" == ax.container)
         if bx.key != "number" -- only [a] can compare with {Number:a}
           status, msg = false, {[side]: "can't compare list with table with non-Number keys"}
         else
-          log "parser/compareSide #container", "delegating to compareSide again #3"
+          log "parser.compareSide #container", "delegating to compareSide again #3"
           status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
       -- {a:b} vs {c:d}
       elseif ("Table" == bx.container) and ("Table" == ax.container)
-        log "parser/compareSide #container", "delegating key to compareSide"
+        log "parser.compareSide #container", "delegating key to compareSide"
         kstatus, kmsg, cache = compareSide {[side]: bx.key}, {[side]: ax.key}, cache, side
-        log "parser/compareSide #container", "delegating value to compareSide"
+        log "parser.compareSide #container", "delegating value to compareSide"
         vstatus, vmsg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
         -- success
         if kstatus and vstatus
@@ -125,6 +141,9 @@ compareSide = (base, against, cache={}, side="left") ->
       -- container vs Table
       if ax == "Table"
         status, msg = true, {}
+      -- container vs typevar
+      elseif isLower ax
+        status, msg, cache = compareSide {[side]: "Table"}, {[side]: ax}, cache, side
       -- container vs simple
       else
         status, msg = false, {[side]: "cannot compare list or table against '#{ax}'"}
@@ -138,6 +157,9 @@ compareSide = (base, against, cache={}, side="left") ->
       -- container vs Table
       if bx == "Table"
         status, msg = true, {}
+      -- container vs typevar
+      elseif isLower bx
+        status, msg, cache = compareSide {[side]: "Table"}, {[side]: bx}, cache, side
       -- container vs simple
       else
         status, msg = false, {[side]: "cannot compare list or table against '#{bx}'"}
@@ -146,7 +168,7 @@ compareSide = (base, against, cache={}, side="left") ->
       status, msg = false, {[side]: "cannot compare signature against simple type"}
   -- simple vs simple 
   elseif (isString bx) and (isString ax)
-    ccstatus, ccerr = compareConstraints base.constl, against.constl
+    ccstatus, ccerr = compareConstraints base.constl, against.constl, bx, ax
     switch caseFor bx, ax
       when 1 -- upper === upper   (1) must be equal and match constraints
         if bx != ax
@@ -164,8 +186,14 @@ compareSide = (base, against, cache={}, side="left") ->
         unless ccstatus
           status, msg = false, {[side]: "constraints do not match: #{ccerr}"}
         else
-          cache[bx] = ax
-          status, msg = true, {}
+          if cache[bx] -- found in cache
+            if cache[bx] != ax
+              status, msg = false, {[side]: "expected #{cache[bx]} (#{bx}), got #{ax}"}
+            else
+              status, msg = true, {}
+          else -- not found in cache
+            cache[bx] = ax
+            status, msg = true, {}
       when 4 -- lower  ?  lower   (4) must match constraints
         unless ccstatus
           status, msg = false, {[side]: "constraints do not match: #{ccerr}"}
@@ -175,18 +203,11 @@ compareSide = (base, against, cache={}, side="left") ->
 
 -- compare two nodes
 compare = (base, against, cache={}) ->
-  log "parser/compare #got", inspect {:base, :against, :cache}
-  -- Removed to be able to compare containers and simple types
-  --     if (type base) != (type against)
-  --       return false, {both: "base and against are not same type"}, cache
-  --     elseif (type base.left) != (type against.left)
-  --       return false, {both: "left sides are not same type"}, cache
-  --     elseif (type base.right) != (type against.right)
-  --       return false, {both: "right sides are not same type"}, cache
+  log "parser.compare #got", inspect {:base, :against, :cache}
   left,  leftmsg,  cache = compareSide base, against, cache, "left"
   right, rightmsg, cache = compareSide base, against, cache, "right"
 
-  log "parser/compare #ret", "l:#{left} r:#{right}"
+  log "parser.compare #ret", "l:#{left} r:#{right}"
   if left and right
     return true, {}, cache
   else

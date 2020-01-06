@@ -90,11 +90,14 @@ removeParenthesis = (sig) -> if x = sig\match "^%s*%((.+)%)%s*$" then x else sig
 
 -- turns [a] -> {container: "List", value: "a"}
 checkList = checkX "checkList", "[", "]", "square brackets"
-toList = (sig) -> {container: "List", value: if x = sig\match "^%[(.+)%]$" then x else sig}
+toList = (sig) ->
+  return sig if "string" != type sig
+  if x = sig\match "^%[(.+)%]$" then {container: "List", value: x} else sig
 
 -- turns {a:b} -> {container: "Table", key: "a", value: "b"}
 checkTable = checkX "checkTable", "{", "}", "curly brackets"
 toTable = (sig) ->
+  return sig if "string" != type sig
   key, value = sig\match "^{(.+):(.+)}$"
   if key and value
     return {container: "Table", :key, :value}
@@ -191,6 +194,11 @@ rebinarize = (sig, child=false, pname, pconstl) ->
   S.right = toList        S.right if checkList        S.right
   S.right = toTable       S.right if checkTable       S.right
   S.right = toApplication S.right if checkApplication S.right
+  --
+  S.left[#S.left]   = toList  S.left[#S.left]   if (S.left[1])  and checkList  S.left[#S.left]
+  S.right[#S.right] = toList  S.right[#S.right] if (S.right[1]) and checkList  S.right[#S.right]
+  S.left[#S.left]   = toTable S.left[#S.left]   if (S.left[1])  and checkTable S.left[#S.left]
+  S.right[#S.right] = toTable S.right[#S.right] if (S.right[1]) and checkTable S.right[#S.right]
   --
   S.left = rebinarize S.left, true, S.name, S.constl if (isString S.left) and S.left\match "%->"
   log "parser.rebinarize #ch", "l: #{oldl} >> #{inspect l}" if S.left != oldl

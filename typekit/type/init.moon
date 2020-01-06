@@ -97,8 +97,8 @@ typeof = setmetatable {
 }
 
 -- Registers a resolver in typeof
-registerResolver = (R) ->
-  typeError "registerResolver requires a Resolver, got #{(hasMeta R) or native R}" if (hasMeta R) != "Resolver"
+register = (R) ->
+  typeError "register requires a Resolver, got #{(hasMeta R) or native R}" if (hasMeta R) != "Resolver"
   -- set depending on priority
   -- 'native' is always resolvers[#resolvers]
   -- 'hasMeta' changes positions (is tracked)
@@ -118,8 +118,8 @@ registerResolver = (R) ->
   for t in *R.returns do typeof.resolver_map[t] = R
 
 -- Register resolvers
-registerResolver hasMeta
-registerResolver isIO
+register hasMeta
+register isIO
 
 -- Check the type of a list
 -- [a]
@@ -141,8 +141,8 @@ typeofTable = (t) ->
       start = false
       isk, isv = (typeof k), (typeof v)
     ttk, ttv = (typeof k), (typeof v)
-    if ttk != isk then typeError "Type disagreement in key of Table checked with typeofTable. Got '#{t}', expected '#{is}'"
-    if ttk != isk then typeError "Type disagreement in key of Table checked with typeofTable. Got '#{t}', expected '#{is}'"
+    if ttk != isk then typeError "Type disagreement in key of Table checked with typeofTable. Got '#{ttk}', expected '#{isk}'"
+    if ttk != isv then typeError "Type disagreement in value of Table checked with typeofTable. Got '#{ttv}', expected '#{isv}'"
     isk, isv = ttk, ttv
   isk, isv
 
@@ -150,6 +150,6 @@ typeofTable = (t) ->
   :Resolver
   :type1, :hasMeta, :isIO
   :typeof
-  :registerResolver
+  :register
   :typeofList, :typeofTable
 }

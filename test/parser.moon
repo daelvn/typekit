@@ -14,7 +14,8 @@ signatures = {
   --"c :: a -> b -> c"
   --"d :: (a -> b) -> c"
   --"e :: a -> b -> c -> d -> e"
-  "f :: ((a -> b) -> c) -> (d -> e)"
+  --"f :: ((a -> b) -> c) -> (d -> e)"
+  "g :: b -> (a -> b) -> Maybe a -> b"
 }
 
 import getlr from parser
@@ -24,14 +25,14 @@ if NAMES
   for i, sig in ipairs signatures
     import nameFor from parser
     n, sig = nameFor sig
-    log "parser/test.nameFor", "#{inspect n} :: #{sig}"
+    log "parser.test.nameFor", "#{inspect n} :: #{sig}"
 
 CONSTRAINTS = false
 if CONSTRAINTS
   for i, sig in ipairs signatures
     import constraintsFor from parser
     cl, sig       = constraintsFor sig
-    log "parser/test.constraintsFor", "#{inspect cl} => #{sig}" if #cl > 0
+    log "parser.test.constraintsFor", "#{inspect cl} => #{sig}" if #cl > 0
 
 BINARIZE = false
 if BINARIZE
@@ -39,9 +40,9 @@ if BINARIZE
     import binarize from parser
     S    = binarize sig 
     l, r = getlr S
-    log "parser/test.binarize",              "#{l} >> #{r}"
-    log "parser/test.binarize #name",        "#{S.name}"
-    log "parser/test.binarize #constraints", "#{inspect S.constl}"
+    log "parser.test.binarize",              "#{l} >> #{r}"
+    log "parser.test.binarize #name",        "#{S.name}"
+    log "parser.test.binarize #constraints", "#{inspect S.constl}"
 
 REBINARIZE = false
 if REBINARIZE
@@ -49,18 +50,18 @@ if REBINARIZE
     import rebinarize from parser
     S    = rebinarize sig
     l, r = getlr S
-    log "parser/test.rebinarize", "#{inspect l} >> #{inspect r}"
+    log "parser.test.rebinarize", "#{inspect l} >> #{inspect r}"
 
 SUBSIGN = false
 if SUBSIGN
   import rebinarize from parser
   S = rebinarize "Eq a => (Ord a => a -> a) -> a" 
-  log "parser/test.rebinarize #subsign", inspect S
+  log "parser.test.rebinarize #subsign", inspect S
 
 COMPARE = true
 if COMPARE
   import rebinarize from parser
-  Sa = rebinarize "maybe  :: b -> (a -> b) -> Maybe a -> b"
-  Sb = rebinarize "maybe' :: Eq b => x -> (b -> x) -> Maybe b -> x"
-  --log "parser/test.rebinarize", inspect Sb
-  log "parser/test.compare", inspect {compare Sa, Sb}
+  Sa = rebinarize ">>=  :: Monad m => a -> m b"
+  Sb = rebinarize ">>=' :: Monad Maybe => a -> Maybe b"
+  --log "parser.test.rebinarize", inspect Sb
+  log "parser.test.compare", inspect {compare Sa, Sb}
