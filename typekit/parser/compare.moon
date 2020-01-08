@@ -14,10 +14,8 @@ import contains,
 -- Compares two sets of constraints
 -- We also get bx and ax because we don't want *any* variable with the same constraints
 compareConstraints = (base={}, target={}, bx, ax) ->
-  -- FIXME Looking for same name var (incorrect)
   log "parser.compareConstraints #got", inspect {:base, :target, :bx, :ax}
   -- can check for constraints
-  -- FIXME Constraints are very broken.
   if isUpper ax
     sel = base[bx]
     cll = classesFor ax
@@ -28,6 +26,7 @@ compareConstraints = (base={}, target={}, bx, ax) ->
   else
     sel = base[bx]
     agt = target[ax]
+    return true,  ""                           unless sel
     return false, "'#{ax}' has no constraints" unless agt
     for tc in *sel
       return false, "'#{ax}' is lacking constraint #{tc}" unless contains agt, tc
@@ -62,23 +61,24 @@ local compare
 
 -- compares string in a side
 compareSide = (base, against, cache={}, side="left") ->
-  -- TODO Cache handling
   status, msg = false, nil
   bx, ax      = base[side], against[side]
   log "parser.compareSide #got", inspect {
     :base, :against, :cache, :side, :bx, :ax
   }
+  -- util functions
+  sd = (x, y={constl:{}}) -> {[side]: x, constl: y.constl}
   -- container/signature vs container/signature
   if (isTable bx) and (isTable ax)
     -- appl vs appl
     if bx.data and ax.data
-      status, msg = compareSide {[side]: bx[#bx]}, {[side]: ax[#ax]}, cache, side
+      status, msg = compareSide (sd bx[#bx]), (sd ax[#ax]), cache, side
       if #bx != #ax
         status, msg = false, {[side]: "different amount of applications in '#{bx.data}' and '#{ax.data}'"}
       else
         status, msg = true, {}
         for i=1,(#bx-1)
-          lstat, lmsg, cache = compareSide {[side]: bx[i], :constl}, {[side]: ax[i], :constl}, cache, side
+          lstat, lmsg, cache = compareSide (sd bx[i], base), (sd ax[i], against), cache, side
           unless lstat
             status, msg = lstat, lmsg
             break
@@ -87,27 +87,27 @@ compareSide = (base, against, cache={}, side="left") ->
       -- [a] vs [b]
       if ("List" == bx.container) and ("List" == ax.container)
         log "parser.compareSide #container", "delegating to compareSide again #1"
-        status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
+        status, msg, cache = comapreSide (sd bx.value, base), (sd ax.value, against), cache side
       -- [a] vs {b:c}
       elseif ("List" == bx.container) and ("Table" == ax.container)
         if ax.key != "number" -- only {Number:a} can compare with [a]
           status, msg = false, {[side]: "can't compare list with table with non-Number keys"}
         else
           log "parser.compareSide #container", "delegating to compareSide again #2"
-          status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
+          status, msg, cache = compareSide (sd bx.value, base), (sd ax.value, against), cache, side
       -- {a:b} vs [c]
       elseif ("Table" == bx.container) and ("List" == ax.container)
         if bx.key != "number" -- only [a] can compare with {Number:a}
           status, msg = false, {[side]: "can't compare list with table with non-Number keys"}
         else
           log "parser.compareSide #container", "delegating to compareSide again #3"
-          status, msg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
+          status, msg, cache = compareSide (sd bx.value, base), (sd ax.value, against), cache, side
       -- {a:b} vs {c:d}
       elseif ("Table" == bx.container) and ("Table" == ax.container)
         log "parser.compareSide #container", "delegating key to compareSide"
-        kstatus, kmsg, cache = compareSide {[side]: bx.key}, {[side]: ax.key}, cache, side
+        kstatus, kmsg, cache = compareSide (sd bx.key, base), (sd ax.key, against), cache, side
         log "parser.compareSide #container", "delegating value to compareSide"
-        vstatus, vmsg, cache = compareSide {[side]: bx.value}, {[side]: ax.value}, cache, side
+        vstatus, vmsg, cache = compareSide (sd bx.value, base), (sd ax.value, against), cache, side
         -- success
         if kstatus and vstatus
           status, msg = true, {}
@@ -143,7 +143,7 @@ compareSide = (base, against, cache={}, side="left") ->
         status, msg = true, {}
       -- container vs typevar
       elseif isLower ax
-        status, msg, cache = compareSide {[side]: "Table"}, {[side]: ax}, cache, side
+        status, msg, cache = compareSide (sd "Table", base), (sd ax, against), cache, side
       -- container vs simple
       else
         status, msg = false, {[side]: "cannot compare list or table against '#{ax}'"}
@@ -159,7 +159,7 @@ compareSide = (base, against, cache={}, side="left") ->
         status, msg = true, {}
       -- container vs typevar
       elseif isLower bx
-        status, msg, cache = compareSide {[side]: "Table"}, {[side]: bx}, cache, side
+        status, msg, cache = compareSide (sd "Table", base), (sd bx, against), cache, side
       -- container vs simple
       else
         status, msg = false, {[side]: "cannot compare list or table against '#{bx}'"}
@@ -168,6 +168,10 @@ compareSide = (base, against, cache={}, side="left") ->
       status, msg = false, {[side]: "cannot compare signature against simple type"}
   -- simple vs simple 
   elseif (isString bx) and (isString ax)
+    log "parser.compareSide #const", inspect {
+      "Comparing constraints"
+      :base, :against
+    }
     ccstatus, ccerr = compareConstraints base.constl, against.constl, bx, ax
     switch caseFor bx, ax
       when 1 -- upper === upper   (1) must be equal and match constraints

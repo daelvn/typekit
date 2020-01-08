@@ -63,5 +63,5 @@ if COMPARE
   import rebinarize from parser
   Sa = rebinarize ">>=  :: Monad m => a -> m b"
   Sb = rebinarize ">>=' :: Monad Maybe => a -> Maybe b"
-  --log "parser.test.rebinarize", inspect Sb
+  --log "parser.test.rebinarize", inspect Sa
   log "parser.test.compare", inspect {compare Sa, Sb}

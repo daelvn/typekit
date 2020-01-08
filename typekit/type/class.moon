@@ -6,8 +6,10 @@ import inspect, log from (require "typekit.debug") DEBUG
 import contains     from  require "typekit.commons"
 
 -- Lookup table for instances and types
+-- typeclass: creates [class]: {}
+-- instance: inserts type into [class]
 memberl = {
-  -- Eq: {"Boolean"}
+  -- Monad: {"Maybe"}
 }
 
 -- Returns the classes that a type is member of
