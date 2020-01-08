@@ -38,7 +38,7 @@ metatype = (T) -> (t) ->
 -- checks whether a table is empty
 empty = (t) ->
   ct = 0
-  for k, v in pairs t do ct += 1
+  for _, _ in pairs t do ct += 1
   ct == 0
 
 {

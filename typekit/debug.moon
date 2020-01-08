@@ -19,6 +19,7 @@
   typekitLgr.exclude = {
     -- parser.nameFor
     "parser.nameFor"
+    "parser.nameFor #got"
     -- parser.binarize
     "parser.binarize #loop"
     "parser.binarize #got"

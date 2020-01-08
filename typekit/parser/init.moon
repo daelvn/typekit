@@ -16,9 +16,10 @@ import trim,
 
 -- Returns and removes the name for a signature, if exists
 nameFor = (sig) ->
+  log "parser.nameFor #got", inspect sig
   local name
   sig  = sig\gsub "^%s*(.+)%s*::%s*", (s) ->
-    log "parser.nameFor", "got #{s}"
+    log "parser.nameFor", "#{s} ::"
     name = s
     ""
   return (trim name), sig
