@@ -32,7 +32,7 @@ local sign
 -- check side
 checkSide = (argx, side, constl={}, cache={}) =>
   -- NOTE Watch out for Cache handling
-  this  = @.tree[side]
+  this  = @tree[side]
   errf  = (errorf @name, @signature, @safe, @silent) true
   warnf = (errorf @name, @signature, @safe, @silent) false
   -- Logging
