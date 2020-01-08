@@ -1,32 +1,48 @@
 -- typekit.sign.init
 -- Signing functions for type checking
 -- By daelvn
+
+-- 5.1 Compat
+unpack or= table.unpack
+
+-- Debugging
 import DEBUG         from  require "typekit.config"
-import inspect, log  from (require "typekit.debug") DEBUG
+import inspect, log,
+       processor     from (require "typekit.debug") DEBUG
+-- Erroring
 import signError,
        errorf        from  require "typekit.sign.error"
+-- Types
 import typeof,
        typeofTable,
        typeofList    from  require "typekit.type"
 import classesFor    from  require "typekit.type.class"
-import compare       from  require "typekit.parser.compare"
+-- Parser
+import compare,
+       compareSide   from  require "typekit.parser.compare"
 import rebinarize    from  require "typekit.parser"
+-- Utils
 import metatype,
        isUpper,
        isLower       from  require "typekit.commons"
 
+-- To reuse earlier in the code
 local sign
 
 -- check side
 checkSide = (argx, side, constl={}, cache={}) =>
-  -- TODO Cache handling
-  this = @[side]
-  err  = (errorf @name, @signature, @safe, @silent) true
-  warn = (errorf @name, @signature, @safe, @silent) false
+  -- NOTE Watch out for Cache handling
+  this  = @.tree[side]
+  errf  = (errorf @name, @signature, @safe, @silent) true
+  warnf = (errorf @name, @signature, @safe, @silent) false
+  -- Logging
+  log "sign.checkSide #got", inspect {:self, :argx, :side, :constl, :cache}, processor.sign
   -- Selecting only first argument since uncurried functions
   -- are not supported anymore. This is a design choice.
-  arg  = argx[1]
-  argi = nil
+  arg   = argx[1]
+  argxr = nil
+  -- Util functions
+  sd = (x) -> {[side]: x, :constl}
   -- Select type for side
   -- signed function
   if this.signature
@@ -34,89 +50,126 @@ checkSide = (argx, side, constl={}, cache={}) =>
     if "Function" == typeof arg
       -- Difference between signed and unsigned
       if "table" == type arg -- signed
-        status, err, cache = compare this, arg, cache
+        status, err, cache = compare this, arg.tree, cache
         if status
-          argi = arg
+          argxr = arg
         else
-          err "Functions do not compare", {
+          errf "Functions do not compare", {
             "Expected: #{this.signature}"
             "Got:      #{arg.signature}"
-            "---"
-            "Left:  #{err.left}"
-            "Right: #{err.right}"
+            ((err.left or err.right) and "---" or nil)
+            (err.left  and "Left:  #{err.left}"  or nil)
+            (err.right and "Right: #{err.right}" or nil)
           }
       elseif "function" == type arg -- unsigned
-        warn "Cannot compare signed function against unsigned function", {
+        warnf "Cannot compare signed function against unsigned function", {
           "Signed function:   #{this.signature}"
           "Unsigned function: #{arg}"
-          "---"
+          (@safe and nil or "---")
           (@safe or "Will be automatically subsigned since @safe is #{@safe}")
         }
-        argi = (sign this.signature) arg
+        argxr = (sign this.signature) arg
       else -- ???
-        err "Expected Function, got #{typeof arg} (#{type arg})"
+        errf "Expected Function, got #{typeof arg} (#{type arg})"
     else
-      err "Expected Function, got #{typeof arg}"
+      errf "Expected Function, got #{typeof arg}"
   -- datatype
   elseif this.data
+    -- {"Either", "l", "r"}
     expect = this[1]
     ehas   = [eh for eh in *this[2,]]
-    if expect != typeof arg -- FIXME Not accounting for lowercase
-      err "Expected '#{this.data}', got '#{typeof arg}'"
-    -- @IMPL x = Just 5; x[1] = 5
-    -- @IMPL "Maybe a";  x.__expects = 1
-    if #ehas != arg.__expects
-      err "Expected #{#ehas} values, got #{arg.__expects}"
-    for i=1, #ehas
-      bx, ax = ehas[i], arg[i+1]
-      -- Delegate to compare
-      status, err, cache = compare {[side]: bx}, {[side]: ax}, cache
-      unless status
-        err "Could not compare '#{bx}' tp '#{ax}'", {
-          "in '#{this.data}' against '#{arg.data}'"
-          "variable ##{i}"
-          "---"
-          "Left:  #{err.left}"
-          "Right: #{err.right}"
-        }
-    argi = arg
+    if isUpper expect -- do all checks
+      if expect != typeof arg
+        errf "Expected '#{this.data}', got '#{typeof arg}'"
+      -- @IMPL x = Just 5; x[1] = 5
+      -- @IMPL "Maybe a";  x.__expects = 1
+      if #ehas != arg.__expects
+        errf "Expected #{#ehas} values, got #{arg.__expects}"
+      for i=1, #ehas
+        bx, ax = ehas[i], arg[i+1]
+        -- Delegate to compare
+        status, err, cache = compareSide (sd bx), (sd ax), cache, side
+        unless status
+          errf "Could not compare '#{inspect bx}' against '#{inspect ax}'", {
+            "in '#{this.data}' against '#{arg.data}'"
+            "variable ##{i}"
+            ((err.left or err.right) and "---" or nil)
+            (err.left  and "Left:  #{err.left}"  or nil)
+            (err.right and "Right: #{err.right}" or nil)
+          }
+        elseif isLower expect -- compare constraints and add to cache (delegate)
+          -- {"m", "a"} (Monads?)
+          expect = this[1]
+          got    = arg[1]
+          status, err, cache = compareSide (sd expect), (sd got), cache, side
+          unless status
+            errf "Could not compare '#{inspect expect}' against '#{inspect got}'", {
+              "in '#{this.data}' against '#{arg.data}'"
+              "variable #0"
+              ((err.left or err.right) and "---" or nil)
+              (err.left  and "Left:  #{err.left}"  or nil)
+              (err.right and "Right: #{err.right}" or nil)
+            }
+          for i=2, #this
+            bx, ax = this[i], arg[i]
+            -- Delegate to compare
+            status, err, cache = compareSide (sd bx), (sd ax), cache, side
+            unless status
+              errf "Could not compare '#{inspect bx}' against '#{inspect ax}'", {
+                "in '#{this.data}' against '#{arg.data}'"
+                "variable ##{i}"
+                ((err.left or err.right) and "---" or nil)
+                (err.left  and "Left:  #{err.left}"  or nil)
+                (err.right and "Right: #{err.right}" or nil)
+              }
+    argxr = arg
   -- container
   elseif this.container
     if "table" != type arg
-      err "Attempt to compare #{this.container} to #{type arg}"
+      errf "Attempt to compare #{this.container} to #{type arg}"
     switch this.container
       when "List"
         ttk, ttv = typeofTable arg
-        if (ttk != "Number") or (ttv != this.value) -- FIXME Not accounting for lowercase
-          err "Attempt to compare {#{ttk}:#{ttv}} to [#{this.value}]", {
+        if (ttk != "Number") or not (compareSide (sd ttv), (sd this.value), cache, side)
+          errf "Attempt to compare {#{ttk}:#{ttv}} to [#{this.value}]", {
             "Expected: {Number:#{this.value}}"
           }
-        argi = arg
+        argxr = arg
       when "Table"
         ttk, ttv = typeofTable arg
-        if (ttk != this.key) or (ttv != this.value) -- FIXME Not accounting for lowercase
-          err "Attempt to compare {#{ttk}:#{ttv}} to {#{this.key}:#{this.value}}"
-        argi = arg
+        if (ttk != this.key) or  (compareSide (sd ttv), (sd this.value), cache, side)
+          errf "Attempt to compare {#{ttk}:#{ttv}} to {#{this.key}:#{this.value}}"
+        argxr = arg
       else
-        err "Unknown container type '#{this.container}'"
+        errf "Unknown container type '#{this.container}'"
   -- simple type
   else
-    return
+    -- possibly delegate to compare?
+    status, err, cache = compareSide (sd this), (sd typeof arg), cache, side
+    unless status
+      errf "Could not compare '#{this}' against '#{typeof arg}'", {
+        (err.left  and "Left:  #{err.left}"  or nil)
+        (err.right and "Right: #{err.right}" or nil)
+      }
+    argxr = arg
   
   -- Success
-  return true
-
+  return argxr, constl, cache
 
 -- Wraps a signed constructor
-wrap ==> (argl, constl={}, cache={})
+wrap ==> (argl, constl={}, cache={}) ->
   -- Check passed arguments
+  log "wrap #got", inspect {:argl, :constl, :cache}, processor.sign
   argi, constl, cache = checkSide @, argl, "left", constl, cache
   -- Run function
-  argm = {@call unpack argi}
+  log "wrap #run", inspect {:argi, :constl, :cache}, processor.sign
+  argm = {@.call argi}
+  log "wrap #ran", inspect {:argm, :constl, :cache}, processor.sign
   -- Check returned arguments
   argo, constl, cache = checkSide @, argm, "right", constl, cache
+  log "wrap #ret", inspect {:argo, :constl, :cache}, processor.sign
   -- Return
-  return unpack argo
+  return argo
 
 -- Signs a function
 sign = (sig, constl={}, cache={}) ->
@@ -141,6 +194,7 @@ sign = (sig, constl={}, cache={}) ->
           -- Check that we are getting a function
           f = select 1, ...
           if "Function" == typeof f
+            log "sign #fn", "Setting to #{f}"
             @call = f
           else
             signError "Expected Function, got #{typeof f}"
@@ -153,10 +207,4 @@ sign = (sig, constl={}, cache={}) ->
           signError "Invalid constructor type #{typeof @}"
   }
 
-f = sign "f :: a -> b"
-f (x) -> x
---
---_f = (_x) ->
---  check _x, "a"
---  _r = {f _x}
---  check _r, "b"
+{ :sign }

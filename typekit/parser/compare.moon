@@ -15,6 +15,7 @@ import contains,
 -- We also get bx and ax because we don't want *any* variable with the same constraints
 compareConstraints = (base={}, target={}, bx, ax) ->
   log "parser.compareConstraints #got", inspect {:base, :target, :bx, :ax}
+  return true, "" if (empty base) and (empty target)
   -- can check for constraints
   if isUpper ax
     sel = base[bx]
@@ -69,6 +70,7 @@ compareSide = (base, against, cache={}, side="left") ->
   -- util functions
   sd = (x, y={constl:{}}) -> {[side]: x, constl: y.constl}
   -- container/signature vs container/signature
+  log "parser.compareSide #types", inspect {(type bx), (type ax)}
   if (isTable bx) and (isTable ax)
     -- appl vs appl
     if bx.data and ax.data
@@ -87,7 +89,7 @@ compareSide = (base, against, cache={}, side="left") ->
       -- [a] vs [b]
       if ("List" == bx.container) and ("List" == ax.container)
         log "parser.compareSide #container", "delegating to compareSide again #1"
-        status, msg, cache = comapreSide (sd bx.value, base), (sd ax.value, against), cache side
+        status, msg, cache = compareSide (sd bx.value, base), (sd ax.value, against), cache side
       -- [a] vs {b:c}
       elseif ("List" == bx.container) and ("Table" == ax.container)
         if ax.key != "number" -- only {Number:a} can compare with [a]
@@ -203,6 +205,7 @@ compareSide = (base, against, cache={}, side="left") ->
           status, msg = false, {[side]: "constraints do not match: #{ccerr}"}
         else
           status, msg = true, {}
+  log "parser.compareSide #ret", inspect {:status, :msg, :cache}
   return status, msg, cache
 
 -- compare two nodes
@@ -217,4 +220,4 @@ compare = (base, against, cache={}) ->
   else
     return false, (mergeMessages leftmsg, rightmsg), cache
 
-{ :compare }
+{ :compareSide, :compare }

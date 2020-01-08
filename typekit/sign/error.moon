@@ -7,21 +7,20 @@ signError = (msg) ->
   error!
 
 fnWarn = (name="typekit", sig) -> (msg, details={}) ->
-  print style "%{bold yellow}#{name} :: #{sig}"
-  print style "%{     yellow}  #{msg}"
+  print style "%{bold yellow}#{sig}"
+  print style "%{     yellow}warning: #{msg}"
   if #details > 0
-    print style "%{   yellow}  ==========================="
+    print style "%{   yellow}==========================="
   for detail in *details
-    print style "%{         }    #{detail}"
-  error!
+    print style "%{         }  #{detail}"
 
 fnError = (name="typekit", sig) -> (msg, details={}) ->
-  print style "%{bold red}#{name} :: #{sig}"
-  print style "%{     red}  #{msg}"
+  print style "%{bold red}#{sig}"
+  print style "%{     red}error: #{msg}"
   if #details > 0
-    print style "%{   red}  ==========================="
+    print style "%{   red}=============================="
   for detail in *details
-    print style "%{      }    #{detail}"
+    print style "%{      }  #{detail}"
   error!
 
 errorf = (name="typekit", sig, safe=false, silent=false) ->

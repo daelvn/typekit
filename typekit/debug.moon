@@ -1,4 +1,10 @@
 (DEBUG) ->
+  unless DEBUG
+    inspect = require "inspect"
+    return {
+      :inspect, log: (->), processor: {sign: process: (x)->(x)}
+    }
+
   import inspect from require "debugkit.inspect"
   import logger  from require "debugkit.log"
   import style   from require "ansikit.style"
@@ -44,6 +50,16 @@
     "type.typeof.resolve #resolved"
   }
 
-  log                = typekitLgr!
+  log = typekitLgr!
 
-  { :inspect, :log }
+  processor = {
+    sign: process: (path) => -- item(@), path
+      i = path[#path]
+      --
+      return nil if i == "type"
+      return nil if i == "call"
+      return nil if i == inspect.METATABLE
+      return @
+  }
+
+  { :inspect, :log, :processor }
