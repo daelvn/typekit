@@ -19,6 +19,7 @@ local sign
 
 -- check side
 checkSide = (argx, side, constl={}, cache={}) =>
+  -- TODO Cache handling
   this = @[side]
   err  = (errorf @name, @signature, @safe, @silent) true
   warn = (errorf @name, @signature, @safe, @silent) false
@@ -60,7 +61,7 @@ checkSide = (argx, side, constl={}, cache={}) =>
   elseif this.data
     expect = this[1]
     ehas   = [eh for eh in *this[2,]]
-    if expect != typeof arg
+    if expect != typeof arg -- FIXME Not accounting for lowercase
       err "Expected '#{this.data}', got '#{typeof arg}'"
     -- @IMPL x = Just 5; x[1] = 5
     -- @IMPL "Maybe a";  x.__expects = 1
@@ -86,14 +87,14 @@ checkSide = (argx, side, constl={}, cache={}) =>
     switch this.container
       when "List"
         ttk, ttv = typeofTable arg
-        if (ttk != "Number") or (ttv != this.value)
+        if (ttk != "Number") or (ttv != this.value) -- FIXME Not accounting for lowercase
           err "Attempt to compare {#{ttk}:#{ttv}} to [#{this.value}]", {
             "Expected: {Number:#{this.value}}"
           }
         argi = arg
       when "Table"
         ttk, ttv = typeofTable arg
-        if (ttk != this.key) or (ttv != this.value)
+        if (ttk != this.key) or (ttv != this.value) -- FIXME Not accounting for lowercase
           err "Attempt to compare {#{ttk}:#{ttv}} to {#{this.key}:#{this.value}}"
         argi = arg
       else
