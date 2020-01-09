@@ -4,6 +4,7 @@
 import DEBUG        from  require "typekit.config"
 import inspect, log from (require "typekit.debug") DEBUG
 import typeError    from  require "typekit.type.error"
+import metatype     from  require "typekit.commons"
 
 -- save native type resolver under a different name
 native = type
@@ -69,6 +70,9 @@ isIO = Resolver {
 
 -- The core function
 typeof = setmetatable {
+  -- type synonyms
+  synonyms: {}
+
   -- resolver ordered list
   resolvers: {type1}
   -- index for @resolvers
@@ -146,10 +150,37 @@ typeofTable = (t) ->
     isk, isv = ttk, ttv
   isk, isv
 
+-- Type synonyms
+Type = (A, T) ->
+  synonym = (metatype "TypeSynonym") {
+    alias: A
+    type:  T
+  }
+  typeof.synonyms[A] = synonym
+
+-- Resolves a type synonym
+resolveSynonym ==>
+  log "type.resolveSynonym #got", inspect @
+  -- Does not support table aliases since that would be too overkill.
+  for _, synonym in pairs typeof.synonyms
+    log "type.resolveSynonym #found", inspect synonym
+    if "string" == type @
+      return synonym.type if @ == synonym.alias
+    elseif "table" == type @
+      if @container and (@container == "Table")
+        @key   = synonym.type if @key   == synonym.alias
+        @value = synonym.type if @value == synonym.alias
+      elseif @container and (@container == "List")
+        @value = synonym.type if @value == synonym.alias
+      elseif @data
+        for i=1, #self do @[i] = synonym.type if @[i] == synonym.alias
+  return @
+
 {
   :Resolver
   :type1, :hasMeta, :isIO
   :typeof
   :register
   :typeofList, :typeofTable
+  :Type, :resolveSynonym
 }

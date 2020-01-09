@@ -6,21 +6,22 @@
 unpack or= table.unpack
 
 -- Debugging
-import DEBUG         from  require "typekit.config"
+import DEBUG          from  require "typekit.config"
 import inspect, log,
-       processor     from (require "typekit.debug") DEBUG
+       processor      from (require "typekit.debug") DEBUG
 -- Erroring
 import signError,
-       errorf        from  require "typekit.sign.error"
+       errorf         from  require "typekit.sign.error"
 -- Types
 import typeof,
        typeofTable,
-       typeofList    from  require "typekit.type"
-import classesFor    from  require "typekit.type.class"
+       typeofList,
+       resolveSynonym from  require "typekit.type"
+import classesFor     from  require "typekit.type.class"
 -- Parser
 import compare,
-       compareSide   from  require "typekit.parser.compare"
-import rebinarize    from  require "typekit.parser"
+       compareSide    from  require "typekit.parser.compare"
+import rebinarize     from  require "typekit.parser"
 -- Utils
 import metatype,
        isUpper,
@@ -28,6 +29,9 @@ import metatype,
 
 -- To reuse earlier in the code
 local sign
+
+-- Parses a single type instead of a function
+selr = (T) -> (T == "string") and (rebinarize T).right or T
 
 -- check side
 checkSide = (argx, side, constl={}, cache={}) =>
@@ -41,6 +45,8 @@ checkSide = (argx, side, constl={}, cache={}) =>
   -- are not supported anymore. This is a design choice.
   arg   = argx[1]
   argxr = nil
+  -- Type synonyms
+  this = selr resolveSynonym this
   -- Util functions
   sd = (x) -> {[side]: x, :constl}
   -- Select type for side
@@ -137,7 +143,7 @@ checkSide = (argx, side, constl={}, cache={}) =>
         argxr = arg
       when "Table"
         ttk, ttv = typeofTable arg
-        if (ttk != this.key) or  (compareSide (sd ttv), (sd this.value), cache, side)
+        if (ttk != this.key) or not (compareSide (sd ttv), (sd this.value), cache, side)
           errf "Attempt to compare {#{ttk}:#{ttv}} to {#{this.key}:#{this.value}}"
         argxr = arg
       else
