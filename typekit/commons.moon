@@ -32,7 +32,7 @@ metatype = (T) -> (t) ->
   if x = getmetatable t
     x.__type = T
   else
-    setmetatable x, __type: T
+    setmetatable t, __type: T
   t
 
 -- checks whether a table is empty
