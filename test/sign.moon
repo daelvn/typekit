@@ -27,4 +27,4 @@ Type "Int", "Number"
 gettnl = sign "{Int:Int} -> Int"
 gettnl (t) -> t[1]
 
-log "MOT/4", gettnl {9, 8, 7, 6}
+log "MOT/4", inspect gettnl {9, 8, 7, 6}
