@@ -3,6 +3,7 @@
 -- By daelvn
 import DEBUG        from  require "typekit.config"
 import inspect, log from (require "typekit.debug") DEBUG
+unpack or= table.unpack
 
 -- Trims spaces around a string
 trim = (str) ->
@@ -85,10 +86,30 @@ containsAllKeys = (trg, base) ->
   for k, _ in pairs base do return false unless trg[k]
   return true
 
+-- Flattens a table
+flatten = (t) ->
+  ret = {}
+  for v in *t
+    if "table" == type v
+      for fv in *flatten v do table.insert ret, fv
+    else table.insert ret, v
+  return ret
+
+-- Curries a function given the arity
+curry = (fn, arity=2) ->
+  -- Lua 5.2+
+  -- arity or= (debug.getinfo fn, "u").nparams
+  return fn if arity < 2
+  helper = (at, n) -> return switch n < 1
+    when true then fn unpack flatten at
+    else           (...) -> helper {at, ...}, n - select "#", ...
+  return helper {}, arity
+
 {
   :trim, :isUpper, :isLower, :isString
   :contains, :isTable
   :getlr
   :metatype, :metaindex, :metakind
   :empty, :keysIn, :containsAllKeys
+  :flatten, :curry
 }

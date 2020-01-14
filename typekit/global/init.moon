@@ -16,8 +16,9 @@ import metatype,
 initG = ->
   return if _G._T
   log "global.initG", "Initializing _T"
-  _G._T = {}
-  _G    = (metaindex (i) => (rawget @, "_T")[i]) _G
+  if GLOBALS
+    _G._T = {}
+    _G    = (metaindex (i) => (rawget @, "_T")[i]) _G
 
 -- Creates a new Subfunction
 -- A Subfunction is a function that can be selected based
@@ -52,7 +53,7 @@ Stub = (name, subfnl={}) ->
 -- Adds stub to _G
 addStub = (stub) ->
   initG!
-  _T[stub.name] = stub
+  _T[stub.name] = stub if GLOBALS
 
 -- Adds subfunction to stub
 addSubfn = (stub) -> (subfn) -> (rawget stub, "instances")[subfn.name] = subfn
@@ -61,7 +62,7 @@ addSubfn = (stub) -> (subfn) -> (rawget stub, "instances")[subfn.name] = subfn
 addReference = (name, fn) ->
   log "global.addReference #got", "Adding reference #{name}"
   initG!
-  _G._T[name] = fn
+  _G._T[name] = fn if GLOBALS
 
 {
   :initG

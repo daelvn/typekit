@@ -13,6 +13,8 @@ import trim,
 -- f :: {a:b} -> {b:a}
 -- f :: [a] -> [b]
 -- f :: Eq a, Ord a => Maybe a -> Boolean
+--   FUTURE?
+--   f :: s -> (s, a)
 
 -- Returns and removes the name for a signature, if exists
 nameFor = (sig) ->

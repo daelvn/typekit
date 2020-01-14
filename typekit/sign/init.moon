@@ -24,6 +24,8 @@ import compare,
 import rebinarize     from  require "typekit.parser"
 -- Utils
 import metatype,
+       empty,
+       keysIn,
        isUpper,
        isLower       from  require "typekit.commons"
 
@@ -87,16 +89,16 @@ checkSide = (argx, side, constl={}, cache={}) =>
       if expect != typeof arg
         errf "Expected '#{this.data}', got '#{typeof arg}'"
       -- @IMPL x = Just 5; x[1] = 5
-      -- @IMPL "Maybe a";  x.__expects = 1
-      if #ehas != arg.__expects
-        errf "Expected #{#ehas} values, got #{arg.__expects}"
+      -- @IMPL "Maybe a";  x.expects = 1
+      if #ehas != keysIn arg
+        errf "Expected #{#ehas} value(s), got #{keysIn arg}"
       for i=1, #ehas
-        bx, ax = ehas[i], arg[i+1]
+        bx, ax = ehas[i], arg[i]
         -- Delegate to compare
-        status, err, cache = compareSide (sd bx), (sd ax), cache, side
+        status, err, cache = compareSide (sd bx), (sd typeof ax), cache, side
         unless status
-          errf "Could not compare '#{inspect bx}' against '#{inspect ax}'", {
-            "in '#{this.data}' against '#{arg.data}'"
+          errf "Could not compare '#{inspect bx}%{red}' against '#{inspect typeof ax}%{red}'", {
+            "in '#{this.data}' against '#{typeof arg}'"
             "variable ##{i}"
             ((err.left or err.right) and "---" or nil)
             (err.left  and "Left:  #{err.left}"  or nil)
@@ -163,13 +165,18 @@ checkSide = (argx, side, constl={}, cache={}) =>
 
 -- Wraps a signed constructor
 wrap ==> (argl, constl={}, cache={}) ->
-  -- Check passed arguments
-  log "wrap #got", inspect {:argl, :constl, :cache}, processor.sign
-  argi, constl, cache = checkSide @, argl, "left", constl, cache
-  -- Run function
-  log "wrap #run", inspect {:argi, :constl, :cache}, processor.sign
-  argm = {@.call argi}
-  log "wrap #ran", inspect {:argm, :constl, :cache}, processor.sign
+  local argm
+  if @tree.left == ""
+    log "wrap #got", "no left side"
+    argm = {@.call!}
+  else
+    -- Check passed arguments
+    log "wrap #got", inspect {:argl, :constl, :cache}, processor.sign
+    argi, constl, cache = checkSide @, argl, "left", constl, cache
+    -- Run function
+    log "wrap #run", inspect {:argi, :constl, :cache}, processor.sign
+    argm = {@.call argi}
+    log "wrap #ran", inspect {:argm, :constl, :cache}, processor.sign
   -- Check returned arguments
   argo, constl, cache = checkSide @, argm, "right", constl, cache
   log "wrap #ret", inspect {:argo, :constl, :cache}, processor.sign
@@ -186,7 +193,6 @@ sign = (sig, constl={}, cache={}) ->
     signature: sig
     :tree
     name:      tree.name
-    type:      typeof
     call:      false
     --
     safe:      false -- Werror

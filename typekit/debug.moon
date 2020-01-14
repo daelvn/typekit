@@ -46,9 +46,20 @@
     "parser.checkTable #status"
     "parser.checkTable #ret"
     "parser.checkTable #got"
+    -- parser.compareSide
+    "parser.compareSide #types"
+    -- type.resovleSynonym
+    "type.resolveSynonym #got"
     -- type.typeof.resolve
     "type.typeof.resolve #got"
     "type.typeof.resolve #resolved"
+    -- sign
+    "sign #got"
+    "sign #fn"
+    "sign #cache"
+    -- global
+    "global.initG"
+    "global.addReference #got"
   }
 
   log = typekitLgr!
