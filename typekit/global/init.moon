@@ -15,13 +15,15 @@ import metatype,
 -- Initializes the global environment
 initG = ->
   return if _G._T
-  export _T = {}
-  _G        = (metaindex (i) => (rawget @, "_T")[i]) _G
+  log "global.initG", "Initializing _T"
+  _G._T = {}
+  _G    = (metaindex (i) => (rawget @, "_T")[i]) _G
 
 -- Creates a new Subfunction
 -- A Subfunction is a function that can be selected based
 -- on some criteria, determined by a second function.
 Subfunction = (name, fn, selector) ->
+  log "global.Subfunction #got", name
   this = (metatype "Subfunction") {
     :name
     reference: fn
@@ -33,6 +35,7 @@ Subfunction = (name, fn, selector) ->
 --   name:   name of the reference
 --   subfnl: table of Subfunctions
 Stub = (name, subfnl={}) ->
+  log "global.Stub #got", name
   this = setmetatable { :name, :subfnl },
     __index: (idx) =>
       if x = (rawget @, "subfnl")[idx]
@@ -54,8 +57,15 @@ addStub = (stub) ->
 -- Adds subfunction to stub
 addSubfn = (stub) -> (subfn) -> (rawget stub, "instances")[subfn.name] = subfn
 
+-- Adds simple function as a reference
+addReference = (name, fn) ->
+  log "global.addReference #got", "Adding reference #{name}"
+  initG!
+  _G._T[name] = fn
+
 {
   :initG
   :Subfunction, :Stub
   :addSubfn,    :addStub
+  :addReference
 }

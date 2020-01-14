@@ -72,6 +72,10 @@ isIO = Resolver {
 typeof = setmetatable {
   -- type synonyms
   synonyms: {}
+  -- datatypes
+  datatypes: {}
+  -- typeclasses
+  typeclasses: {}
 
   -- resolver ordered list
   resolvers: {type1}

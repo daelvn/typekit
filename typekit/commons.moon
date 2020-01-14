@@ -35,6 +35,15 @@ metatype = (T) -> (t) ->
     setmetatable t, __type: T
   t
 
+-- Sets the metakind for a table
+-- Kinds are used for differencing constructors in types\
+metakind = (K) -> (t) ->
+  if x = getmetatable t
+    x.__kind = K
+  else
+    setmetatable t, __kind: K
+  t
+
 -- checks whether a table is empty
 empty = (t) ->
   ct = 0
@@ -65,11 +74,21 @@ metaindex = (__index) -> (t) ->
   -- no metatable
   else return setmetatable t, :__index
 
+-- get the amount of keys in a table
+keysIn = (t) ->
+  n = 0
+  for _, _ in pairs t do n += 1
+  return n
+
+-- Checks that two tables share the same keys
+containsAllKeys = (trg, base) ->
+  for k, _ in pairs base do return false unless trg[k]
+  return true
 
 {
   :trim, :isUpper, :isLower, :isString
   :contains, :isTable
   :getlr
-  :metatype, :metaindex
-  :empty
+  :metatype, :metaindex, :metakind
+  :empty, :keysIn, :containsAllKeys
 }

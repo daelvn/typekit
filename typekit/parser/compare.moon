@@ -74,7 +74,7 @@ compareSide = (base, against, cache={}, side="left") ->
   if (isTable bx) and (isTable ax)
     -- appl vs appl
     if bx.data and ax.data
-      status, msg = compareSide (sd bx[#bx]), (sd ax[#ax]), cache, side
+      status, msg = compareSide (sd bx[#bx], base), (sd ax[#ax], against), cache, side
       if #bx != #ax
         status, msg = false, {[side]: "different amount of applications in '#{bx.data}' and '#{ax.data}'"}
       else
