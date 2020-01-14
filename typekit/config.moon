@@ -1,3 +1,4 @@
 {
-  DEBUG: true
+  DEBUG:   true
+  GLOBALS: true
 }

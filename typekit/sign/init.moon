@@ -35,7 +35,6 @@ selr = (T) -> (T == "string") and (rebinarize T).right or T
 
 -- check side
 checkSide = (argx, side, constl={}, cache={}) =>
-  -- NOTE Watch out for Cache handling
   this  = @tree[side]
   errf  = (errorf @name, @signature, @safe, @silent) true
   warnf = (errorf @name, @signature, @safe, @silent) false

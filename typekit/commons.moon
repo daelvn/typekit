@@ -41,10 +41,35 @@ empty = (t) ->
   for _, _ in pairs t do ct += 1
   ct == 0
 
+-- Sets the __index metamethod for a table
+-- Handles merging
+metaindex = (__index) -> (t) ->
+  if x = getmetatable t
+    -- merge
+    if __oldindex = x.__index
+      -- only handle functions
+      if "function" == type __oldindex
+        -- nerge functions
+        x.__index = (idx) =>
+          if y = __index @, idx
+            return y
+          else
+            return __oldindex @, idx
+        return t
+      -- merging tables not supported
+      else return t
+    -- no merge
+    else
+      x.__index = __index
+      return t
+  -- no metatable
+  else return setmetatable t, :__index
+
+
 {
   :trim, :isUpper, :isLower, :isString
   :contains, :isTable
   :getlr
-  :metatype
+  :metatype, :metaindex
   :empty
 }
