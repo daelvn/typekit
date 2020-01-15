@@ -1,17 +1,31 @@
 import DEBUG   from  require "typekit.config"
 import inspect from (require "typekit.debug") DEBUG
-import Type    from require "typekit.type.data"
-import sign    from require "typekit.sign"
+import Type    from  require "typekit.type.data"
+import sign    from  require "typekit.sign"
 
 Maybe = Type "Maybe a",
   Nothing: ""
   Just:    "a"
 
-j5     = Maybe.constructor.Just true
+Either = Type "Either l r",
+  Left:  "l"
+  Right: "r"
+
+Person = Type "Person",
+  Person: {
+    ""
+    {name: "String"}
+    {age:  "Number"}
+  }
+
+import Just from Maybe.constructor
+
+j5     = Just 5
 unwrap = sign "Maybe Number -> Number"
 unwrap (mn) -> mn[1]
 
-print inspect j5
-print "==="
-print "==="
-print inspect unwrap j5
+import name, age from Person.record
+import Person    from Person.constructor
+
+dael = (Person "Dael") 16
+print "MOTX", name dael

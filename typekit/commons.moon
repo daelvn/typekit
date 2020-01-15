@@ -105,11 +105,14 @@ curry = (fn, arity=2) ->
     else           (...) -> helper {at, ...}, n - select "#", ...
   return helper {}, arity
 
+-- Gets the first key found in a table
+getPair = (t) -> for k, v in pairs t do return k, v
+
 {
   :trim, :isUpper, :isLower, :isString
   :contains, :isTable
   :getlr
   :metatype, :metaindex, :metakind
-  :empty, :keysIn, :containsAllKeys
+  :empty, :keysIn, :containsAllKeys, :getPair
   :flatten, :curry
 }

@@ -15,11 +15,29 @@
 --   Maybe {a} -- Just a
 --   Maybe { } -- Nothing
 --
+--   data Person = Person {
+--     name :: String
+--     age  :: Int
+--   }
+--       # Translates to #
+--   Type "Person",
+--     Person:
+--       ""
+--       name: "String"
+--       age:  "Int"
+--       # Constructors #
+--     Person :: String -> Int -> Person
+--     name   :: Person -> Int
+--     age    :: Person -> String
+--       # Application #
+--     Person "Dael" 16
+--     Person R{ name: "Dael", age: 16 }
+--
 --   data State s a = State { runState :: s -> (s, a) }
 --       # Translates to #
 --   Type "State s' a'",
 --     State:    ""
---     runState: sign "s' -> Pair s' a'"
+--     runState: "s' -> Pair s' a'"
 --       # Object structure #
 --   State {s', a'}
 --   runState :: s' -> Pair s' a'
@@ -33,6 +51,7 @@ import sign           from  require "typekit.sign"
 import curry,
        metatype,
        metakind,
+       getPair,
        isLower,
        isUpper        from  require "typekit.commons"
 
@@ -46,15 +65,33 @@ parseAnnotation = (ann) -> [word for word in ann\gmatch "%S+"]
 buildSignature = (name, t) -> "#{name} :: #{table.concat t, " -> "}"
 
 -- Creates a new constructor
-Constructor = (name, parent, __annotation) ->
-  this            = {:__annotation, :parent, :name}
-  this.annotation = parseAnnotation __annotation
+Constructor = (name, parent, definition, record={}) ->
+  this = {:definition, :parent, :name, :record}
+  -- check if we have records
+  if "Table" == typeof definition
+    this.annotation = parseAnnotation definition[1]
+    table.remove definition, 1
+    for rec in *definition
+      -- get record information & signature
+      record, sig = getPair rec
+      recf        = sign "#{record} :: #{parent.name} -> #{sig}"
+      -- get position & add record
+      lat                  = #this.annotation+1
+      this.annotation[lat] = sig
+      -- function & add reference
+      parent.record[record] = recf (x) -> x[lat]
+  else
+    this.annotation = parseAnnotation definition
+  -- validate variables
+  for var in *this.annotation
+    log "type.data.Constructor #var", var
+    if (isLower var) and (not parent.variablel[var])
+      typeError "No variable '#{var}' in type annotation"
   -- build signature
   ann             = [v for v in *this.annotation]
   table.insert ann, parent.name
   this.signature  = buildSignature this.name, ann
   Ct              = sign this.signature
-  --
   return Ct curry ((...) ->
     log "Ct #got", inspect {...}
     return (metatype parent.name) (metakind this.name) {...}
@@ -83,16 +120,19 @@ Type  = (__annotation, definition) ->
   this.expects = #this.annotation - 1
   -- variables
   this.variables = {i-1, this.annotation[i] for i=2, #this.annotation}
+  this.variablel = {v, k for k, v in pairs this.variables}
   --
   this.constructor = {}
+  this.record      = {}
   for name, def in pairs definition
-    if isLower name -- record
-      continue
-      -- TODO get a working record syntax
-      -- How do I get stuff like 's -> (s, a)' working?
-    elseif isUpper name -- constructor
+    if isUpper name -- constructor
       this.constructor[name] = Constructor name, this, def
       addReference name, this.constructor[name]
-    else typeError "'#{name}' must begin with alphanumeric character"
+    else typeError "'#{name}' must begin with uppercase character"
   --
+  addReference this.name, this
   return this
+
+{
+  :Type, :Constructor
+}
