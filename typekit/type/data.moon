@@ -54,6 +54,7 @@ import curry,
        getPair,
        isLower,
        isUpper        from  require "typekit.commons"
+--unpack or= table.unpack
 
 -- Parses an annotation
 -- Annotations are like "signatures" for types themselves
@@ -65,8 +66,8 @@ parseAnnotation = (ann) -> [word for word in ann\gmatch "%S+"]
 buildSignature = (name, t) -> "#{name} :: #{table.concat t, " -> "}"
 
 -- Creates a new constructor
-Constructor = (name, parent, definition, record={}) ->
-  this = {:definition, :parent, :name, :record}
+Constructor = (name, parent, definition) ->
+  this = {:definition, :parent, :name, record: {}, rorder: {}}
   -- check if we have records
   if "Table" == typeof definition
     this.annotation = parseAnnotation definition[1]
@@ -77,6 +78,7 @@ Constructor = (name, parent, definition, record={}) ->
       recf        = sign "#{record} :: #{parent.name} -> #{sig}"
       -- get position & add record
       lat                  = #this.annotation+1
+      this.rorder[record]  = lat
       this.annotation[lat] = sig
       -- function & add reference
       parent.record[record] = recf (x) -> x[lat]
@@ -92,10 +94,22 @@ Constructor = (name, parent, definition, record={}) ->
   table.insert ann, parent.name
   this.signature  = buildSignature this.name, ann
   Ct              = sign this.signature
-  return Ct curry ((...) ->
+  Ctf             = Ct curry ((...) ->
     log "Ct #got", inspect {...}
     return (metatype parent.name) (metakind this.name) {...}
   ), #this.annotation
+  return (x) -> switch typeof x
+    when "Record"
+      argl = {}
+      for record, val in pairs x
+        log "type.data.Constructor #record", "Calling with record syntax, #{this.rorder[record]} is #{inspect val}"
+        argl[this.rorder[record]] = val
+      log "type.data.Constructor #record", "Arguments are #{inspect argl}"
+      fn = Ctf
+      for arg in *argl do fn = fn arg
+      return fn
+    else
+      return Ctf x
 
 -- Creates a new type
 _TSyn = Type
@@ -133,6 +147,9 @@ Type  = (__annotation, definition) ->
   addReference this.name, this
   return this
 
+-- Passing record syntax to constructors
+Record = (t) -> (metatype "Record") t
+
 {
-  :Type, :Constructor
+  :Type, :Constructor, :Record
 }

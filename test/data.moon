@@ -1,7 +1,9 @@
-import DEBUG   from  require "typekit.config"
-import inspect from (require "typekit.debug") DEBUG
-import Type    from  require "typekit.type.data"
-import sign    from  require "typekit.sign"
+import DEBUG        from  require "typekit.config"
+import inspect      from (require "typekit.debug") DEBUG
+import Type, Record from  require "typekit.type.data"
+import sign         from  require "typekit.sign"
+
+R = Record
 
 Maybe = Type "Maybe a",
   Nothing: ""
