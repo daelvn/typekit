@@ -72,6 +72,12 @@
       return nil if i == "call"
       return nil if i == inspect.METATABLE
       return @
+    match: process: (path) => -- item(@), path
+      i = path[#path]
+      --
+      return nil if i == "__parent"
+      return nil if i == "parent"
+      return @
   }
 
   { :inspect, :log, :processor }

@@ -25,9 +25,14 @@ import rebinarize     from  require "typekit.parser"
 -- Utils
 import metatype,
        empty,
+       clone,
+       setfenv,
+       uncurry,
        keysIn,
        isUpper,
        isLower       from  require "typekit.commons"
+-- Pattern matching
+import match         from  require "typekit.type.match"
 
 -- To reuse earlier in the code
 local sign
@@ -194,15 +199,21 @@ sign = (sig, constl={}, cache={}) ->
     :tree
     name:      tree.name
     call:      false
+    patterns:  {}
     --
     safe:      false -- Werror
     silent:    false -- Silence warnings
   }, {
+    __kind: "Signed"
     __type: "SignedConstructor"
+    __newindex: (i,v) =>
+      -- add pattern matching
+      if "Case" != typeof i
+        signError "Pattern must be of type Case"
+      @patterns[i] = v
     __call: (...) =>
       switch typeof @
         when "SignedConstructor"
-          -- Check that we are getting a function
           f = select 1, ...
           if "Function" == typeof f
             log "sign #fn", "Setting to #{f}"
@@ -213,7 +224,38 @@ sign = (sig, constl={}, cache={}) ->
           (metatype "Function") @
         when "Function"
           log "sign #cache", inspect cache
-          return (wrap @) {...}, constl, cache
+          if #@patterns == 0
+            -- no pattern matching
+            return (wrap @) {...}, constl, cache
+          else
+            -- pattern matching
+            -- has to flatten function call
+            fn, varl = @call, {}
+            for C, f in pairs @patterns
+              matched = true
+              -- check each argument
+              for i, arg in ipairs {...}
+                st, varll = match i, arg, C
+                unless st
+                  matched = false
+                  break
+                for k, v in pairs varll do varl[k] = v
+              -- break if matched, continue otherwise
+              if matched
+                fn = f
+                break
+              else continue
+            -- variable injection
+            @call   = fn
+            _CENV   = clone _ENV
+            for k, v in pairs varl do _CENV[k] = v
+            setfenv @call, _CENV
+            -- generate function
+            wrapped  = sign sig, constl, cache
+            wrapped @call
+            wrappedf = uncurry wrapped
+            -- call function
+            wrappedf unpack {...}
         else
           signError "Invalid constructor type #{typeof @}"
   }

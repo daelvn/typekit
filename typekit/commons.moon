@@ -45,6 +45,17 @@ metakind = (K) -> (t) ->
     setmetatable t, __kind: K
   t
 
+-- Sets the parent of an object
+metaparent = (P) -> (t) ->
+  if x = getmetatable t
+    x.__parent = P
+  else
+    setmetatable t, __parent: P
+  t
+
+-- returns the parent of an object
+parentOf = (t) -> (getmetatable t).__parent
+
 -- checks whether a table is empty
 empty = (t) ->
   ct = 0
@@ -105,14 +116,40 @@ curry = (fn, arity=2) ->
     else           (...) -> helper {at, ...}, n - select "#", ...
   return helper {}, arity
 
+-- Uncurries a function given the arity
+uncurry = (fn) -> (...) ->
+  argl = {...}
+  fn   = fn
+  for arg in *argl
+    fn = fn arg
+  fn
+
 -- Gets the first key found in a table
 getPair = (t) -> for k, v in pairs t do return k, v
 
+-- clone
+-- Shallow-clone a table
+clone = (t) -> {k, v for k, v in pairs t}
+
+-- setfenv
+setfenv or= (fn, env) ->
+  i = 1
+  while true do
+    name = debug.getupvalue fn, i
+    if name == "_ENV"
+      debug.upvaluejoin fn, i, (-> env), 1
+    elseif not name
+      break
+    i += 1
+  fn
+
 {
   :trim, :isUpper, :isLower, :isString
-  :contains, :isTable
+  :contains, :isTable, :clone
   :getlr
-  :metatype, :metaindex, :metakind
+  :metatype, :metaindex, :metakind, :metaparent
+  :parentOf
   :empty, :keysIn, :containsAllKeys, :getPair
-  :flatten, :curry
+  :flatten, :curry, :uncurry
+  :setfenv
 }

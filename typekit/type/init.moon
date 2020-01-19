@@ -53,6 +53,7 @@ hasMeta = Resolver {
     local meta
     if type_mt = getmetatable v
       meta = type_mt.__type
+    else return false
     switch native meta
       when "function" then meta v
       when "string"   then meta
@@ -180,10 +181,26 @@ resolveSynonym ==>
         for i=1, #self do @[i] = synonym.type if @[i] == synonym.alias
   return @
 
+-- Gets the kind of a value
+kindof = Resolver {
+  name:     "kindof"
+  resolve:  (v) ->
+    local meta
+    if type_mt = getmetatable v
+      meta = type_mt.__kind
+    else return false
+    switch native meta
+      when "function" then meta v
+      when "string"   then meta
+      else                 false
+  returns:  {}
+  --priority: "after-meta" // not supposed to go in typeof
+}
+
 {
   :Resolver
   :type1, :hasMeta, :isIO
-  :typeof
+  :typeof, :kindof
   :register
   :typeofList, :typeofTable
   :Type, :resolveSynonym

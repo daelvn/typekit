@@ -51,6 +51,7 @@ import sign           from  require "typekit.sign"
 import curry,
        metatype,
        metakind,
+       metaparent,
        getPair,
        isLower,
        isUpper        from  require "typekit.commons"
@@ -90,15 +91,22 @@ Constructor = (name, parent, definition) ->
     if (isLower var) and (not parent.variablel[var])
       typeError "No variable '#{var}' in type annotation"
   -- build signature
-  ann             = [v for v in *this.annotation]
+  ann = [v for v in *this.annotation]
+  log "type.data.Constructor #ann", inspect ann
+  -- @IMPL if we take no arguments, return object directly
+  if #ann == 0
+    log "type.data.Constructor #direct", "Direct constructor -> #{this.name}"
+    return (metaparent parent) (metatype parent.name) (metakind this.name) setmetatable {}, __tostring: this.name 
+  -- keep building signature
   table.insert ann, parent.name
   this.signature  = buildSignature this.name, ann
   Ct              = sign this.signature
   Ctf             = Ct curry ((...) ->
     log "Ct #got", inspect {...}
-    return (metatype parent.name) (metakind this.name) {...}
+    return (metaparent parent) (metatype parent.name) (metakind this.name) setmetatable {...}, __tostring: this.name
   ), #this.annotation
-  return (x) -> switch typeof x
+  --
+  return (metatype "Function") (metakind "Constructor") setmetatable this, __call: (x) => switch typeof x
     when "Record"
       argl = {}
       for record, val in pairs x
@@ -145,7 +153,7 @@ Type  = (__annotation, definition) ->
     else typeError "'#{name}' must begin with uppercase character"
   --
   addReference this.name, this
-  return this
+  return (metatype "Type") (metakind this.name) setmetatable this, __tostring: this.name
 
 -- Passing record syntax to constructors
 Record = (t) -> (metatype "Record") t

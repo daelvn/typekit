@@ -20,7 +20,7 @@ Person = Type "Person",
     {age:  "Number"}
   }
 
-import Just from Maybe.constructor
+import Nothing, Just from Maybe.constructor
 
 j5     = Just 5
 unwrap = sign "Maybe Number -> Number"
@@ -30,4 +30,6 @@ import name, age from Person.record
 import Person    from Person.constructor
 
 dael = (Person "Dael") 16
-print "MOTX", name dael
+--print "MOTX", name dael
+
+print "MOTX", inspect Nothing
