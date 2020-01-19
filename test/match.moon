@@ -17,7 +17,7 @@ V, _ = Variable, Unbound
 vx   = V"x"
 
 fromMaybe = sign "a -> Maybe a -> a"
-fromMaybe[case Just, vx] = (a) -> -> x
-fromMaybe[case Nothing]  = (a) -> -> a
+fromMaybe[case _, Just, vx] = -> -> x
+fromMaybe[case vx, Nothing] = -> -> x
 
 print fromMaybe Just 5
