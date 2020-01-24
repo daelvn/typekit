@@ -38,3 +38,10 @@ case = (...) ->
   for arg in *{...}
     table.insert shapel, shapeFor arg
   return (metatype "Case") shapel
+
+-- Matches a value to part of a case
+match = (C, i, v) -> C[i] v
+
+{
+  :case, :match
+}
