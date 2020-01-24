@@ -229,33 +229,7 @@ sign = (sig, constl={}, cache={}) ->
             return (wrap @) {...}, constl, cache
           else
             -- pattern matching
-            -- has to flatten function call
-            fn, varl = @call, {}
-            for C, f in pairs @patterns
-              matched = true
-              -- check each argument
-              for i, arg in ipairs {...}
-                st, varll = match i, arg, C
-                unless st
-                  matched = false
-                  break
-                for k, v in pairs varll do varl[k] = v
-              -- break if matched, continue otherwise
-              if matched
-                fn = f
-                break
-              else continue
-            -- variable injection
-            @call   = fn
-            _CENV   = clone _ENV
-            for k, v in pairs varl do _CENV[k] = v
-            setfenv @call, _CENV
-            -- generate function
-            wrapped  = sign sig, constl, cache
-            wrapped @call
-            wrappedf = uncurry wrapped
-            -- call function
-            wrappedf unpack {...}
+            signError "Patterns not supported yet"
         else
           signError "Invalid constructor type #{typeof @}"
   }
