@@ -199,18 +199,12 @@ sign = (sig, constl={}, cache={}) ->
     :tree
     name:      tree.name
     call:      false
-    patterns:  {}
     --
     safe:      false -- Werror
     silent:    false -- Silence warnings
   }, {
     __kind: "Signed"
     __type: "SignedConstructor"
-    __newindex: (i,v) =>
-      -- add pattern matching
-      if "Case" != typeof i
-        signError "Pattern must be of type Case"
-      @patterns[i] = v
     __call: (...) =>
       switch typeof @
         when "SignedConstructor"
@@ -224,12 +218,7 @@ sign = (sig, constl={}, cache={}) ->
           (metatype "Function") @
         when "Function"
           log "sign #cache", inspect cache
-          if #@patterns == 0
-            -- no pattern matching
-            return (wrap @) {...}, constl, cache
-          else
-            -- pattern matching
-            signError "Patterns not supported yet"
+          return (wrap @) {...}, constl, cache
         else
           signError "Invalid constructor type #{typeof @}"
   }
