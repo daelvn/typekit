@@ -42,6 +42,12 @@ case = (...) ->
 -- Matches a value to part of a case
 match = (C, i, v) -> C[i] v
 
+-- Advances an argument in the case
+advance = (C) ->
+  table.remove C, 1
+  return C
+
 {
-  :case, :match
+  :case, :match, :advance
+  :Unbound, :Variable
 }

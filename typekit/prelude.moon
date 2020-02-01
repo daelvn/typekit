@@ -39,9 +39,11 @@ either (fl) -> (fr) -> (e) -> switch kindof e
 --# Ordering #--
 Ordering = Type "Ordering",
   LT: "", EQ: "", GT: ""
+import LT, EQ, GT from Ordering.constructor
 
 --# Pair #--
 Pair = Type "Pair a b", Tuple: "a b"
+import Tuple from Pair.constructor
 
 -- fst
 fst = sign "Pair a b -> a"
@@ -65,8 +67,8 @@ compose (fa) -> (fb) -> (x) -> fa fb x
 flip = sign "(a -> b -> c) -> b -> a -> c"
 flip (f) -> (b) -> (a) -> (f a) b
 
-until = sign "(a -> Boolean) -> (a -> a) -> a -> a"
-until (p) -> (f) -> (v) -> if p! then return f v else return v
+until_ = sign "(a -> Boolean) -> (a -> a) -> a -> a"
+until_ (p) -> (f) -> (v) -> if p! then return f v else return v
 
 asTypeOf = sign "a -> a -> a"
 asTypeOf (c) -> -> c
