@@ -189,7 +189,7 @@ wrap ==> (argl, constl={}, cache={}) ->
   return argo
 
 -- Signs a function
-sign = (sig, constl={}, cache={}) ->
+sign = (sig, constl={}, cache) ->
   log "sign #got", sig
   -- Generate tree
   tree = rebinarize sig, false, nil, constl
@@ -217,8 +217,10 @@ sign = (sig, constl={}, cache={}) ->
           -- Set self metatype to Function
           (metatype "Function") @
         when "Function"
-          log "sign #cache", inspect cache
-          return (wrap @) {...}, constl, cache
+          -- using (cache or {}) instead of 'cache={}' fixes cache issues
+          -- for some unknown reason
+          log "sign #cache", inspect (cache or {})
+          return (wrap @) {...}, constl, (cache or {})
         else
           signError "Invalid constructor type #{typeof @}"
   }
