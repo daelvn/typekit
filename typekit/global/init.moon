@@ -53,7 +53,7 @@ Stub = (name, subfnl={}) ->
 -- Adds stub to _G
 addStub = (stub) ->
   initG!
-  _T[stub.name] = stub if GLOBALS
+  _G._T[stub.name] = stub if GLOBALS
 
 -- Adds subfunction to stub
 addSubfn = (stub) -> (subfn) -> (rawget stub, "instances")[subfn.name] = subfn
