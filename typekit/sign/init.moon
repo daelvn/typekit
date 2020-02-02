@@ -28,7 +28,9 @@ import metatype,
        clone,
        setfenv,
        uncurry,
+       bind,
        keysIn,
+       getPair,
        isUpper,
        isLower       from  require "typekit.commons"
 -- Pattern matching
@@ -41,7 +43,7 @@ local sign
 selr = (T) -> (T == "string") and (rebinarize T).right or T
 
 -- check side
-checkSide = (argx, side, constl={}, cache={}) =>
+checkSide = (argx, side, constl={}, cache={}, patl={}) =>
   this  = @tree[side]
   errf  = (errorf @name, @signature, @safe, @silent) true
   warnf = (errorf @name, @signature, @safe, @silent) false
@@ -80,7 +82,7 @@ checkSide = (argx, side, constl={}, cache={}) =>
           (@safe and nil or "---")
           (@safe or "Will be automatically subsigned since @safe is #{@safe}")
         }
-        argxr = (sign this.signature) arg
+        argxr = (sign this.signature constl, cache, patl) arg
       else -- ???
         errf "Expected Function, got #{typeof arg} (#{type arg})"
     else
@@ -169,7 +171,7 @@ checkSide = (argx, side, constl={}, cache={}) =>
   return argxr, constl, cache
 
 -- Wraps a signed constructor
-wrap ==> (argl, constl={}, cache={}) ->
+wrap ==> (argl, constl={}, cache, patl={}) ->
   local argm
   if @tree.left == ""
     log "wrap #got", "no left side"
@@ -177,19 +179,19 @@ wrap ==> (argl, constl={}, cache={}) ->
   else
     -- Check passed arguments
     log "wrap #got", inspect {:argl, :constl, :cache}, processor.sign
-    argi, constl, cache = checkSide @, argl, "left", constl, cache
+    argi, constl, cache = checkSide @, argl, "left", constl, cache, patl
     -- Run function
     log "wrap #run", inspect {:argi, :constl, :cache}, processor.sign
     argm = {@.call argi}
     log "wrap #ran", inspect {:argm, :constl, :cache}, processor.sign
   -- Check returned arguments
-  argo, constl, cache = checkSide @, argm, "right", constl, cache
+  argo, constl, cache = checkSide @, argm, "right", constl, cache, patl
   log "wrap #ret", inspect {:argo, :constl, :cache}, processor.sign
   -- Return
   return argo
 
 -- Signs a function
-sign = (sig, constl={}, cache) ->
+sign = (sig, constl={}, cache, patl={}) ->
   log "sign #got", sig
   -- Generate tree
   tree = rebinarize sig, false, nil, constl
@@ -199,12 +201,25 @@ sign = (sig, constl={}, cache) ->
     :tree
     name:      tree.name
     call:      false
+    patterns:  patl
     --
     safe:      false -- Werror
     silent:    false -- Silence warnings
   }, {
     __kind: "Signed"
     __type: "SignedConstructor"
+    -- add patterns
+    __newindex: (cs, fn) =>
+      if "Case" == typeof cs
+        if "Function" == typeof fn
+          if #cs -- TODO == expects @tree
+            -- TODO expects is essentially the arity of it
+            log "Adding pattern ##{keysIn @patterns}"
+            @patterns[cs] = (sign @signature) fn
+          else signError "Case should be #{expects @tree} arguments long, got #{#cs} instead."
+        else signError "Expected Function, got #{typeof fn}"
+      else signError "Expected Case, got #{typeof cs}"
+    -- define or call the function
     __call: (...) =>
       switch typeof @
         when "SignedConstructor"
@@ -219,8 +234,58 @@ sign = (sig, constl={}, cache) ->
         when "Function"
           -- using (cache or {}) instead of 'cache={}' fixes cache issues
           -- for some unknown reason
-          log "sign #cache", inspect (cache or {})
-          return (wrap @) {...}, constl, (cache or {})
+          log "sign #cache",   inspect (cache or {})
+          log "sign #pattern", keysIn @patterns
+          if 0 == keysIn @patterns
+            -- no patterns to match
+            return (wrap @) {...}, constl, (cache or {})
+          else
+            -- patterns to match
+            arg = ({...})[1]
+            -- lets build a list of the patterns that do match
+            vars     = {}
+            matching = for cs, fn in pairs @patterns
+              vars[cs] = match cs, 1, arg
+              if vars[cs] then cs, fn
+            switch keysIn matching
+              when 0
+                -- none matched, check for default
+                if @call
+                  return (wrap @) {...}, constl, (cache or {})
+                else signError "Patterns are not exhaustive enough"
+              when 1
+                -- one matched, use that function
+                cs, @call = getPair matching
+                env       = do
+                  x = clone _G
+                  for k, v in pairs vars[cs] do x[k] = v
+                  x
+                setfenv @call, env
+                return (wrap @) {...}, constl, (cache or {})
+              else
+                -- matched more than one
+                -- bind argument to all functions since it will work
+                for cs, fn in pairs matching
+                  matching[cs]           = nil
+                  matching[(advance cs)] = (setfenv ((bind fn) arg), vars[cs])
+                -- call is expected to be a function that takes in
+                -- typed arguments and returns the expected values.
+                -- the problem here is returning a something that
+                -- has the expected type.
+                -- POSSIBLE SOLUTION
+                -- sign the pattern functions
+                -- postpone typechecking
+                @call = -> -- TODO what should @call be defined as?
+                -- what about adding an internal type
+                -- that always makes it pass?
+                --   NO because it has to return a callable function
+                --   but i can make that type structure callable
+                -- if i redefine @call, what about a default
+                -- callable function? that is overwritten
+                -- perhaps i dont even need to set call?
+                -- what if i returned something that does not use
+                -- wrap?
+
         else
           signError "Invalid constructor type #{typeof @}"
   }

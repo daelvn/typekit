@@ -116,13 +116,16 @@ curry = (fn, arity=2) ->
     else           (...) -> helper {at, ...}, n - select "#", ...
   return helper {}, arity
 
--- Uncurries a function given the arity
+-- Uncurries a function
 uncurry = (fn) -> (...) ->
   argl = {...}
   fn   = fn
   for arg in *argl
     fn = fn arg
   fn
+
+-- Binds an argument as the first one to a function
+bind = (fn) -> (v) -> (...) -> (fn v) ...
 
 -- Gets the first key found in a table
 getPair = (t) -> for k, v in pairs t do return k, v
@@ -150,6 +153,6 @@ setfenv or= (fn, env) ->
   :metatype, :metaindex, :metakind, :metaparent
   :parentOf
   :empty, :keysIn, :containsAllKeys, :getPair
-  :flatten, :curry, :uncurry
+  :flatten, :curry, :uncurry, :bind
   :setfenv
 }

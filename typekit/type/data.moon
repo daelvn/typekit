@@ -82,6 +82,7 @@ Constructor = (name, parent, definition) ->
       this.rorder[record]  = lat
       this.annotation[lat] = sig
       -- function & add reference
+      -- FIXME reference is not added here
       parent.record[record] = recf (x) -> x[lat]
   else
     this.annotation = parseAnnotation definition

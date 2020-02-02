@@ -7,6 +7,7 @@ import inspect, log,
 import typeof, kindof from  require "typekit.type"
 import typeError      from  require "typekit.type.error"
 import metatype,
+       keysIn,
        isUpper,
        isLower        from  require "typekit.commons"  
 
@@ -16,7 +17,7 @@ Variable = (s) -> (metatype "Variable")    {variable: s}
 _, V = Unbound, Variable
 
 -- Function that takes in any value and defines it as a shape.
-import Tag, S, T, L, X from require "typekit.tableshape"
+import Tag, S, Pt, T, L, E from require "typekit.tableshape"
 shapeFor = (x) -> switch typeof x
   when "Unbound"  then return T"any"
   when "Variable" then return (Tag T"any") x.variable
@@ -26,9 +27,9 @@ shapeFor = (x) -> switch typeof x
     return (Tag E x) "value"
   when "Pair"
     a, b = x[1], x[2]
-    return (S {(shapeFor a), (shapeFor b)})
+    return (Pt {(shapeFor a), (shapeFor b)})
   else
-    if kindof x then return S [shapeFor v for v in *x]
+    if kindof x then return Pt [shapeFor v for v in *x]
     else             return E x
 
 -- Takes a list of things to match and returns a shape
@@ -44,6 +45,7 @@ match = (C, i, v) -> C[i] v
 
 -- Advances an argument in the case
 advance = (C) ->
+  if 0 == keysIn C then return nil
   table.remove C, 1
   return C
 
