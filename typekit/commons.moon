@@ -30,6 +30,7 @@ getlr = (sig) -> return sig.left, sig.right
 
 -- Sets the metatype for a table
 metatype = (T) -> (t) ->
+  log "metatype", "setting to #{T}"
   if x = getmetatable t
     x.__type = T
   else
@@ -136,6 +137,14 @@ clone = (t) -> {k, v for k, v in pairs t}
 
 -- setfenv
 setfenv or= (fn, env) ->
+  log "setfenv", "setting env for #{inspect fn}"
+  oldf, isin = {}, false
+  if ("table" == type fn) and
+     (getmetatable fn)    and
+     (getmetatable fn).__call
+    oldf = fn
+    fn   = (bind (getmetatable fn).__call) fn
+    isin = true
   i = 1
   while true do
     name = debug.getupvalue fn, i
@@ -144,7 +153,11 @@ setfenv or= (fn, env) ->
     elseif not name
       break
     i += 1
-  fn
+  if isin
+    (getmetatable oldf).__call = fn
+    return oldf
+  else
+    return fn
 
 {
   :trim, :isUpper, :isLower, :isString

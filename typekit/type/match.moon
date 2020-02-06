@@ -17,20 +17,22 @@ Variable = (s) -> (metatype "Variable")    {variable: s}
 _, V = Unbound, Variable
 
 -- Function that takes in any value and defines it as a shape.
-import Tag, S, Pt, T, L, E from require "typekit.tableshape"
+import Tag, TKType, S, Pt, T, L from require "typekit.tableshape"
 shapeFor = (x) -> switch typeof x
   when "Unbound"  then return T"any"
   when "Variable" then return (Tag T"any") x.variable
   when "String", "Number", "Thread", "Boolean", "Userdata", "Nil"
     return (Tag L x) "value"
   when "Table"
-    return (Tag E x) "value"
+    return (Tag Pt x) "value"
   when "Pair"
     a, b = x[1], x[2]
     return (Pt {(shapeFor a), (shapeFor b)})
   else
-    if kindof x then return Pt [shapeFor v for v in *x]
-    else             return E x
+    -- if kindof x then return Pt [shapeFor v for v in *x]
+    -- else             return E x
+    -- should match type *and* kind and also values inside
+    return (TKType x, shapeFor)
 
 -- Takes a list of things to match and returns a shape
 -- case V"x", (Just V"y"), _

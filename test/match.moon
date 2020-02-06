@@ -17,13 +17,20 @@ V, _ = Variable, Unbound
 vx   = V"x"
 
 -- print inspect match (case Just Just V"x"), 1, Just Just 5
+-- stat, err = match (case Nothing), 1, Just 5
+-- print "aaaa", (inspect stat), (inspect err)
+-- stat, err = match (case Just vx), 1, Just 5
+-- print "aaaa", (inspect stat), (inspect err)
 
-unwrap = sign "Maybe a -> a"
+unwrap = sign "unwrap :: Maybe a -> a"
+unwrap           (x)   -> x[1]
 unwrap[case Nothing] = -> error "Cannot be Nothing"
 unwrap[case Just vx] = -> x
-unwrap           (x)   -> x[1]
 
-print unwrap Just 5
+print "-------------------"
+j5 = Just 5
+print "///////////////////"
+print inspect unwrap j5
 
 --fromMaybe = sign "a -> Maybe a -> a"
 --fromMaybe[case _,  Just vx] = -> -> x

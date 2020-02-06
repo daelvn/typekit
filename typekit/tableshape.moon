@@ -1,8 +1,9 @@
 -- typekit.tableshape
 -- leafo/tableshape mappings to make it simpler to use
 -- By daelvn
-ts = require "tableshape"
-tl = ts.types
+import typeof, kindof from require "typekit.type"
+ts                       = require "tableshape"
+tl                       = ts.types
 
 {
   Optional:  (x) -> x\is_optional!
@@ -23,4 +24,12 @@ tl = ts.types
   Custom:     tl.custom,     C:  tl.custom
   Equivalent: tl.equivalent, E:  tl.equivalent
   Range:      tl.range,      R:  tl.range
+
+  TKType: (x, f) -> (tl.custom (v) ->
+    if (typeof x) != typeof v
+      return nil, "expected type #{typeof x}"
+    if (kindof x) != kindof v
+      return nil, "expected kind #{kindof x}"
+    return true
+  ) * (tl.partial [f y for y in *x])
 }

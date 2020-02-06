@@ -93,7 +93,7 @@ typeof = setmetatable {
 
   -- uses resolvers on value
   resolve: (v) =>
-    log "type.typeof.resolve #got", "Resolving #{inspect v}"
+    log "type.typeof.resolve #got", "Resolving..."-- #{inspect v}"
     for resolver in *@resolvers
       if ty = resolver v
         log "type.typeof.resolve #resolved", "Resolved '#{ty}' by #{@resolver_names[resolver]}"

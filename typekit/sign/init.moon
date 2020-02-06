@@ -34,7 +34,10 @@ import metatype,
        isUpper,
        isLower       from  require "typekit.commons"
 -- Pattern matching
-import match         from  require "typekit.type.match"
+import match,
+       advance       from  require "typekit.type.match"
+-- Arity
+import arityFor      from  require "typekit.sign.arity"
 
 -- To reuse earlier in the code
 local sign
@@ -168,17 +171,19 @@ checkSide = (argx, side, constl={}, cache={}, patl={}) =>
     argxr = arg
   
   -- Success
+  log "checkSide #ret", inspect {:argxr, :constl, :cache}
   return argxr, constl, cache
 
 -- Wraps a signed constructor
 wrap ==> (argl, constl={}, cache, patl={}) ->
+  log "wrap #self", inspect @, processor.sign
   local argm
   if @tree.left == ""
     log "wrap #got", "no left side"
     argm = {@.call!}
   else
     -- Check passed arguments
-    log "wrap #got", inspect {:argl, :constl, :cache}, processor.sign
+    log "wrap #got", inspect {@name, :argl, :constl, :cache}, processor.sign
     argi, constl, cache = checkSide @, argl, "left", constl, cache, patl
     -- Run function
     log "wrap #run", inspect {:argi, :constl, :cache}, processor.sign
@@ -212,15 +217,18 @@ sign = (sig, constl={}, cache, patl={}) ->
     __newindex: (cs, fn) =>
       if "Case" == typeof cs
         if "Function" == typeof fn
-          if #cs -- TODO == expects @tree
-            -- TODO expects is essentially the arity of it
-            log "Adding pattern ##{keysIn @patterns}"
+          log "sign #newpat", inspect {arityFor @tree}
+          if #cs == arityFor @tree
+            log "sign #newpat", "Adding pattern ##{keysIn @patterns}"
             @patterns[cs] = (sign @signature) fn
+            -- Set self metatype to Function, since it can already be called
+            (metatype "Function") @
           else signError "Case should be #{expects @tree} arguments long, got #{#cs} instead."
         else signError "Expected Function, got #{typeof fn}"
       else signError "Expected Case, got #{typeof cs}"
     -- define or call the function
     __call: (...) =>
+      --log "sign #got2", inspect @, processor.sign
       switch typeof @
         when "SignedConstructor"
           f = select 1, ...
@@ -244,9 +252,11 @@ sign = (sig, constl={}, cache, patl={}) ->
             arg = ({...})[1]
             -- lets build a list of the patterns that do match
             vars     = {}
-            matching = for cs, fn in pairs @patterns
+            matching = {}
+            for cs, fn in pairs @patterns
               vars[cs] = match cs, 1, arg
-              if vars[cs] then cs, fn
+              if vars[cs] then matching[cs] = fn
+            log "sign #pattern", "matched #{keysIn matching}"
             switch keysIn matching
               when 0
                 -- none matched, check for default
@@ -260,32 +270,22 @@ sign = (sig, constl={}, cache, patl={}) ->
                   x = clone _G
                   for k, v in pairs vars[cs] do x[k] = v
                   x
-                setfenv @call, env
+                -- FIXME my call set logic may be flawed
+                -- FIXME fix tmrw
+                @call = setfenv @call, env -- FIXME i think the error is here
+                log "sign #wrap", "self is #{typeof @}"
                 return (wrap @) {...}, constl, (cache or {})
               else
                 -- matched more than one
                 -- bind argument to all functions since it will work
                 for cs, fn in pairs matching
+                  log "sign #advance", "advancing matches. binding #{inspect arg, processor.match}"
                   matching[cs]           = nil
                   matching[(advance cs)] = (setfenv ((bind fn) arg), vars[cs])
-                -- call is expected to be a function that takes in
-                -- typed arguments and returns the expected values.
-                -- the problem here is returning a something that
-                -- has the expected type.
-                -- POSSIBLE SOLUTION
-                -- sign the pattern functions
-                -- postpone typechecking
-                @call = -> -- TODO what should @call be defined as?
-                -- what about adding an internal type
-                -- that always makes it pass?
-                --   NO because it has to return a callable function
-                --   but i can make that type structure callable
-                -- if i redefine @call, what about a default
-                -- callable function? that is overwritten
-                -- perhaps i dont even need to set call?
-                -- what if i returned something that does not use
-                -- wrap?
-
+                log "sign #call", "call is #{typeof @call}"
+                return with (sign @signature, constl, cache, matching) (@call or ->)
+                  .safe   = @safe
+                  .silent = @silent
         else
           signError "Invalid constructor type #{typeof @}"
   }

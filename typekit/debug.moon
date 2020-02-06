@@ -47,14 +47,19 @@
     "parser.checkTable #ret"
     "parser.checkTable #got"
     -- parser.compareSide
+    "parser.compareSide #got"
     "parser.compareSide #types"
+    "parser.compareSide #ret"
+    "parser.compareSide #const"
+    -- parser.compareConstraints
+    "parser.compareConstraints #got"
     -- type.resovleSynonym
     "type.resolveSynonym #got"
     -- type.typeof.resolve
     "type.typeof.resolve #got"
     "type.typeof.resolve #resolved"
     -- sign
-    "sign #got"
+    --"sign #got"
     "sign #fn"
     "sign #cache"
     -- global
@@ -70,7 +75,7 @@
       --
       return nil if i == "type"
       return nil if i == "call"
-      return nil if i == inspect.METATABLE
+      return {@__type, @__kind, @__newindex} if i == inspect.METATABLE
       return @
     match: process: (path) => -- item(@), path
       i = path[#path]

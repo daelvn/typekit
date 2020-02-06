@@ -82,7 +82,7 @@ Constructor = (name, parent, definition) ->
       this.rorder[record]  = lat
       this.annotation[lat] = sig
       -- function & add reference
-      -- FIXME reference is not added here
+      addReference record, parent.record[record]
       parent.record[record] = recf (x) -> x[lat]
   else
     this.annotation = parseAnnotation definition
@@ -100,7 +100,10 @@ Constructor = (name, parent, definition) ->
     return (metaparent parent) (metatype parent.name) (metakind this.name) setmetatable {}, __tostring: this.name 
   -- keep building signature
   table.insert ann, parent.name
+  for v in *this.annotation do ann[#ann] ..= " #{v}"
+  log "type.data.Constructor #ann", inspect ann
   this.signature  = buildSignature this.name, ann
+  log "type.data.Constructor #sig", inspect this.signature
   Ct              = sign this.signature
   Ctf             = Ct curry ((...) ->
     log "Ct #got", inspect {...}
