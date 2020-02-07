@@ -75,6 +75,7 @@
       --
       return nil if i == "type"
       return nil if i == "call"
+      return nil if i == "patterns"
       return {@__type, @__kind, @__newindex} if i == inspect.METATABLE
       return @
     match: process: (path) => -- item(@), path

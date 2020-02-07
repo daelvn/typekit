@@ -1,0 +1,3 @@
+-- typekit.sign.init
+-- Signing functions for type checking
+-- By daelvn

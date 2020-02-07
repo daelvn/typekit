@@ -12,7 +12,7 @@ fnWarn = (name="typekit", sig) -> (msg, details={}) ->
   if #details > 0
     print style "%{   yellow}==========================="
   for detail in *details
-    print style "%{         }  #{detail}"
+    print style "%{         }  #{detail}" if detail
 
 fnError = (name="typekit", sig) -> (msg, details={}) ->
   print style "%{bold red}#{sig}"
@@ -20,7 +20,7 @@ fnError = (name="typekit", sig) -> (msg, details={}) ->
   if #details > 0
     print style "%{   red}=============================="
   for detail in *details
-    print style "%{      }  #{detail}"
+    print style "%{      }  #{detail}" if detail
   error!
 
 errorf = (name="typekit", sig, safe=false, silent=false) ->

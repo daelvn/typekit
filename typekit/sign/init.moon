@@ -42,6 +42,9 @@ import arityFor      from  require "typekit.sign.arity"
 -- To reuse earlier in the code
 local sign
 
+-- Always compares to teuw
+TKTrue = (metatype "TKTrue") {}
+
 -- Parses a single type instead of a function
 selr = (T) -> (T == "string") and (rebinarize T).right or T
 
@@ -51,11 +54,16 @@ checkSide = (argx, side, constl={}, cache={}, patl={}) =>
   errf  = (errorf @name, @signature, @safe, @silent) true
   warnf = (errorf @name, @signature, @safe, @silent) false
   -- Logging
-  log "sign.checkSide #got", inspect {:self, :argx, :side, :constl, :cache}, processor.sign
+  log "sign.checkSide #got",     inspect {:self, :argx, :side, :constl, :cache}, processor.sign
+  log "sign.checkSide #expects", inspect {:this}
   -- Selecting only first argument since uncurried functions
   -- are not supported anymore. This is a design choice.
   arg   = argx[1]
   argxr = nil
+  -- Skip if TKTrue
+  if "TKTrue" == typeof arg
+    log "sign.checkSide #ret", inspect {:argx, :constl, :cache}
+    return argx[2], constl, cache
   -- Type synonyms
   this = selr resolveSynonym this
   -- Util functions
@@ -85,7 +93,7 @@ checkSide = (argx, side, constl={}, cache={}, patl={}) =>
           (@safe and nil or "---")
           (@safe or "Will be automatically subsigned since @safe is #{@safe}")
         }
-        argxr = (sign this.signature constl, cache, patl) arg
+        argxr = (sign this.signature, constl, cache, patl) arg
       else -- ???
         errf "Expected Function, got #{typeof arg} (#{type arg})"
     else
@@ -175,7 +183,7 @@ checkSide = (argx, side, constl={}, cache={}, patl={}) =>
   return argxr, constl, cache
 
 -- Wraps a signed constructor
-wrap ==> (argl, constl={}, cache, patl={}) ->
+wrap ==> (argl, constl={}, cache, patl={}, vars) ->
   log "wrap #self", inspect @, processor.sign
   local argm
   if @tree.left == ""
@@ -183,16 +191,28 @@ wrap ==> (argl, constl={}, cache, patl={}) ->
     argm = {@.call!}
   else
     -- Check passed arguments
+    local i1
+    if @ignore1 or vars
+      log "wrap #i1", "#{inspect argl[1]} #{inspect argl}"
+      i1 = table.remove argl, 1
+      log "wrap #i1", "#{inspect i1}, #{inspect argl}"
     log "wrap #got", inspect {@name, :argl, :constl, :cache}, processor.sign
     argi, constl, cache = checkSide @, argl, "left", constl, cache, patl
     -- Run function
     log "wrap #run", inspect {:argi, :constl, :cache}, processor.sign
-    argm = {@.call argi}
+    log "wrap #fn",  inspect @call
+    if vars
+      --@ignore1 = true
+      argm = {@.call TKTrue, vars, argi}
+    else
+      argm = {@.call argi}
     log "wrap #ran", inspect {:argm, :constl, :cache}, processor.sign
   -- Check returned arguments
   argo, constl, cache = checkSide @, argm, "right", constl, cache, patl
   log "wrap #ret", inspect {:argo, :constl, :cache}, processor.sign
   -- Return
+  -- if @ignore1 or vars
+  --   table.insert argo, 1, i1
   return argo
 
 -- Signs a function
@@ -210,6 +230,7 @@ sign = (sig, constl={}, cache, patl={}) ->
     --
     safe:      false -- Werror
     silent:    false -- Silence warnings
+    ignore1:   false -- Ingores the first argument passed to function
   }, {
     __kind: "Signed"
     __type: "SignedConstructor"
@@ -220,7 +241,11 @@ sign = (sig, constl={}, cache, patl={}) ->
           log "sign #newpat", inspect {arityFor @tree}
           if #cs == arityFor @tree
             log "sign #newpat", "Adding pattern ##{keysIn @patterns}"
-            @patterns[cs] = (sign @signature) fn
+            patsig = if @name
+              @signature\gsub @name, "#{@name}$#{keysIn @patterns}"
+            else
+              @signature
+            @patterns[cs] = (sign patsig) fn
             -- Set self metatype to Function, since it can already be called
             (metatype "Function") @
           else signError "Case should be #{expects @tree} arguments long, got #{#cs} instead."
@@ -228,6 +253,7 @@ sign = (sig, constl={}, cache, patl={}) ->
       else signError "Expected Case, got #{typeof cs}"
     -- define or call the function
     __call: (...) =>
+      log "sign #call", "calling #{@name}"
       --log "sign #got2", inspect @, processor.sign
       switch typeof @
         when "SignedConstructor"
@@ -266,15 +292,16 @@ sign = (sig, constl={}, cache, patl={}) ->
               when 1
                 -- one matched, use that function
                 cs, @call = getPair matching
-                env       = do
-                  x = clone _G
-                  for k, v in pairs vars[cs] do x[k] = v
-                  x
-                -- FIXME my call set logic may be flawed
-                -- FIXME fix tmrw
-                @call = setfenv @call, env -- FIXME i think the error is here
+                varl      = {}
+                for k, v in pairs vars[cs] do varl[k] = v
+                log "sign #vars", inspect varl
+                -- env       = do
+                --   x = clone _G
+                --   for k, v in pairs vars[cs] do x[k] = v
+                --   x
+                --@call = setfenv @call, env
                 log "sign #wrap", "self is #{typeof @}"
-                return (wrap @) {...}, constl, (cache or {})
+                return (wrap @) {TKTrue, ...}, constl, (cache or {}), {}, varl
               else
                 -- matched more than one
                 -- bind argument to all functions since it will work

@@ -126,7 +126,9 @@ uncurry = (fn) -> (...) ->
   fn
 
 -- Binds an argument as the first one to a function
-bind = (fn) -> (v) -> (...) -> (fn v) ...
+bind = (fn) -> (v) ->
+  log "bind", "bound #{inspect v} to #{inspect fn}"
+  (...) -> (fn v) ...
 
 -- Gets the first key found in a table
 getPair = (t) -> for k, v in pairs t do return k, v
@@ -143,7 +145,8 @@ setfenv or= (fn, env) ->
      (getmetatable fn)    and
      (getmetatable fn).__call
     oldf = fn
-    fn   = (bind (getmetatable fn).__call) fn
+    fn   = (getmetatable fn).__call
+    --fn   = (bind (getmetatable fn).__call) fn
     isin = true
   i = 1
   while true do
