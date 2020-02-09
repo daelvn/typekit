@@ -44,7 +44,7 @@ if BINARIZE
     log "parser.test.binarize #name",        "#{S.name}"
     log "parser.test.binarize #constraints", "#{inspect S.constl}"
 
-REBINARIZE = false
+REBINARIZE = true
 if REBINARIZE
   for i, sig in ipairs signatures
     import rebinarize from parser
@@ -58,7 +58,7 @@ if SUBSIGN
   S = rebinarize "Eq a => (Ord a => a -> a) -> a" 
   log "parser.test.rebinarize #subsign", inspect S
 
-COMPARE = true
+COMPARE = false
 if COMPARE
   import rebinarize from parser
   Sa = rebinarize ">>=  :: Monad m => a -> m b"

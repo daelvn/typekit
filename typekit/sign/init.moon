@@ -42,7 +42,7 @@ import arityFor      from  require "typekit.sign.arity"
 -- To reuse earlier in the code
 local sign
 
--- Always compares to teuw
+-- Always compares to true
 TKTrue = (metatype "TKTrue") {}
 
 -- Parses a single type instead of a function
