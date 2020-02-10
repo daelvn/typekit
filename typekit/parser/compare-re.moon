@@ -21,7 +21,7 @@ EMPTY = setmetatable {}, __index: (i) =>
 -- against that value.
 -- All combinators have the form:
 --  (v, cv, side, cache) -> (x, cx) -> (boolean, table, table).
-local ^
+local Any, Variable, List, Table, Tuple, Application, Function
 
 Any = (v, cv, side, cache={}) ->
   cv or= v.constraints or EMPTY
@@ -186,6 +186,7 @@ Application = (v, cv, side, cache={}) ->
   log "compare #Application", "constructing for " .. inspect {
     :v, :cv, :side, :cache
   }
+  len = #v
   if v.tag == "appl"
     return (x, cx) ->
       cx or= x.constraints or EMPTY
@@ -233,11 +234,16 @@ Function = (v, cv, side, cache={}) ->
         return false, (mergeMessages er, el), cache
   else -> return false, {[side]: "expected function, got #{v.tag}"}, cache
 
-import parse from require "typekit.parser.init-re"
-s1 = parse "map  :: Eq a => (a -> b) -> [a] -> [b]"
-s2 = parse "map' :: Eq x => (x -> y) -> [x] -> [y]"
+-- import parse from require "typekit.parser.init-re"
+-- s1 = parse "map  :: Eq a => (a -> b) -> [a] -> [b]"
+-- s2 = parse "map' :: Eq x => (x -> y) -> [x] -> [y]"
 
-shape = Any s1
-stat, err, cache = shape s2
+-- shape = Any s1
+-- stat, err, cache = shape s2
 
-print stat, (inspect err), (inspect cache)
+-- print stat, (inspect err), (inspect cache)
+
+{ 
+  :Any, :Variable, :List, :Table, :Tuple, :Application, :Function
+  compare: Any
+}
